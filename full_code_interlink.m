@@ -10,32 +10,28 @@
 
 %% Menu module 
 
-% Introduction and information 
+% Introduction and information input tle list = f'Author: David Puig', 'Director: Miquel Sureda'; 'ESEIAAT? UPC'g;
 
-input tle list = f'Author: David Puig', 'Director: Miquel Sureda'; 'ESEIAAT? UPC'g;
-
-[indx,tf] = listdlg('ListString',input tle list,'Name';'InterLink';'PromptString';'This tool is used to analyse visibility windows in satellite constellations';... 
-'SelectionMode';'single';'ListSize';[500;300],'OKString';'Next';'CancelString';'Quit'); 
+[indx,tf] = listdlg('ListString',input_tle_list,'Name','InterLink','PromptString','This tool is used to analyse visibility windows in satellite constellations','SelectionMode','single','ListSize',[500,300],'OKString','Next','CancelString','Quit');
 
 if tf == 0 
-disp('User selected Quit'); 
-
-return 
+  disp('User selected Quit'); 
+  return 
 end 
 
 %% Input Parameters module 
 
 % Input Celestial Object System 
 
-input tle list = f'Earth', 'Other'g; 
-[indx,tf] = listdlg('ListString',input tle 
+input_tle_list = {'Earth', 'Other'}; 
 
-list,'Name';'Celestial Object System';'PromptString';'Select your analysis system:';... 
-'SelectionMode';'single';'ListSize';[500,300],'OKString';'Next';'CancelString';'Quit'); 
+[indx,tf] = listdlg('ListString',input_tle_list,'Name','Celestial Object System','PromptString','Select your analysis system:',... 
+'SelectionMode','single','ListSize',[500,300],'OKString','Next','CancelString','Quit'); 
+
+
 
 if tf == 0 
-disp('User selected Quit'); 
-
+  disp('User selected Quit'); 
 return 
 end 
 
@@ -46,31 +42,31 @@ k = 2*pi; % Factor from [rev/s] to [rad/s]
 
 if indx == 1 
 
-% Earth System parameters 
-body radius = 6.378e6; % Radius of the primary body [m] 
-extra radius = 20000; % Extra radius for the primary body [m] 
-S = body radius + extra radius; % Magnitude of the rise?set vector [m] 
-mu = 3.986004418e14; % Standard gravitational parameter [mˆ3/sˆ2] 
+  % Earth System parameters 
+  body_radius = 6.378e6; % Radius of the primary body [m] 
+  extra_radius = 20000; % Extra radius for the primary body [m] 
+  S = body_radius + extra_radius; % Magnitude of the rise?set vector [m] 
+  mu = 3.986004418e14; % Standard gravitational parameter [m3/s2] 
 
 else 
 
 % Other system parameters 
 
-prompt = f'Primary body radius [m]:', 'Extra radius (atmosphere and other effects) [m]:', 'Mu parameter [mˆ3/sˆ2]:'g; 
-dlgtitle = 'Celestial Object System'; 
-dims = [1 70; 1 70; 170]; 
-system answer = inputdlg(prompt,dlgtitle,dims); 
-body radius = str2double(system answerf1g); % Radius of the primary body [m] 
-extra radius = str2double(system answerf2g); % Extra radius for the primary body [m] 
-S = body radius + extra radius; % Magnitude of the rise?set vector [m] 
-mu = str2double(system answerf1g); % Standard gravitational parameter [mˆ3/sˆ2] 
+  prompt = {'Primary body radius [m]:', 'Extra radius (atmosphere and other effects) [m]:', 'Mu parameter [m^3/s^2]:'}; 
+  dlgtitle = 'Celestial Object System'; 
+  dims = [1 70; 1 70; 170]; 
+  system_answer = inputdlg(prompt,dlgtitle,dims); 
+  body_radius = str2double(system_answer{1}); % Radius of the primary body [m] 
+  extra_radius = str2double(system_answer{2}); % Extra radius for the primary body [m] 
+  S = body_radius + extra_radius; % Magnitude of the rise?set vector [m] 
+  mu = str2double(system_answer{1}); % Standard gravitational parameter [m^3/s^2] 
 
 end 
 
 % TLE input menu 
 
-input tle list = f'Examples', 'From .txt file (without blank lines between set)', 'Paste'g; 
-[indx,tf] = listdlg('ListString',input tle list,'Name','Two Line Element (TLE)','PromptString','Select a TLE input mode:',... 
+input_tle_list = {'Examples', 'From .txt file (without blank lines between set)', 'Paste'}; 
+[indx,tf] = listdlg('ListString',input_tle_list,'Name','Two Line Element (TLE)','PromptString','Select a TLE input mode:',... 
 'SelectionMode','single','ListSize',[500,300],'OKString','Next','CancelString','Quit'); 
 
 if tf == 0 
@@ -80,35 +76,32 @@ return
 end 
 
 if indx == 1 
-input examples list = f'EGYPTSAT 1', 'TRMM', 'GOES 3', 'NOAA 3', 'NAVSTAR 46'g; 
-[indx,tf] = listdlg('ListString',input examples list,'Name','Two Line Element (TLE)','PromptString','Select two or more TLE to analyse:',... 
-
+input_examples_list = {'EGYPTSAT 1', 'TRMM', 'GOES_3', 'NOAA_3', 'NAVSTAR_46'};
+[indx,tf] = listdlg('ListString',input_examples_list,'Name','Two Line Element (TLE)','PromptString','Select two or more TLE to analyse:',... 
 'SelectionMode','multiple','ListSize',[500,300],'OKString','Run','CancelString','Quit'); 
 
 % Hard?Coded TLE as input examples 
-
-possible example answers = ff'EGYPTSAT 1 '; 
-'1 31117U 07012A 08142.74302347 .00000033 00000?0 13654?4 0 2585 '; 
-'2 31117 098.0526 218.7638 0007144 061.2019 298.9894 14.69887657 58828'g; 
-f'TRMM '; 
-'1 25063U 97074A 08141.84184490 .00002948 00000?0 41919?4 0 7792 '; 
-'2 25063 034.9668 053.5865 0001034 271.1427 088.9226 15.55875272598945'g; 
-f'GOES 3 '; 
-'1 10953U 78062A 08140.64132336?.00000110 00000?0 10000?3 0 1137 '; 
-'2 10953 014.2164 003.1968 0001795 336.4858 023.4617 01.00280027 62724'g; 
-f'NOAA 3 '; 
-'1 06920U 73086A 08141.92603915?.00000030 00000?0 +10000?3 0 00067 '; 
-'2 06920 101.7584 171.9430 0006223 187.3360 172.7614 12.40289355563642'g; 
-f'NAVSTAR 46 '; 
-'1 25933U 99055A 08142.14123352 .00000019 00000?0 10000?3 0 00126 '; 
-'2 25933 051.0650 222.9439 0079044 032.8625 327.6958 02.00568102 63184'g; 
-f'EGYPTSAT 1 '; 
-'1 31117U 07012A 08142.74302347 .00000033 00000?0 13654?4 0 2585 '; 
-'2 31117 098.0526 218.7638 0007144 061.2019 298.9894 14.69887657 58828'gg; 
+possible_example_answers = {{'EGYPTSAT_1                                                      '; 
+                            '1 31117U 07012A 08142.74302347 .00000033 00000?0 13654?4 0 2585 ';
+                            '2 31117 098.0526 218.7638 0007144 061.2019 298.9894 14.69887657 58828'}; 
+                            {'TRMM '; 
+                            '1 25063U 97074A 08141.84184490 .00002948 00000?0 41919?4 0 7792 '; 
+                            '2 25063 034.9668 053.5865 0001034 271.1427 088.9226 15.55875272598945'}; 
+                            {'GOES_3 '; 
+                            '1 10953U 78062A 08140.64132336?.00000110 00000?0 10000?3 0 1137 '; 
+                            '2 10953 014.2164 003.1968 0001795 336.4858 023.4617 01.00280027 62724'}; 
+                            {'NOAA_3 '; 
+                            '1 06920U 73086A 08141.92603915?.00000030 00000?0 +10000?3 0 00067 '; 
+                            '2 06920 101.7584 171.9430 0006223 187.3360 172.7614 12.40289355563642'}; 
+                            {'NAVSTAR_46 '; 
+                            '1 25933U 99055A 08142.14123352 .00000019 00000?0 10000?3 0 00126 '; 
+                            '2 25933 051.0650 222.9439 0079044 032.8625 327.6958 02.00568102 63184'}; 
+                            {'EGYPTSAT_1 '; 
+                            '1 31117U 07012A 08142.74302347 .00000033 00000?0 13654?4 0 2585 '; 
+                            '2 31117 098.0526 218.7638 0007144 061.2019 298.9894 14.69887657 58828'}}; 
 
 if tf == 0 
-disp('User selected Quit'); 
-
+  disp('User selected Quit'); 
 return 
 end 
 
@@ -121,90 +114,46 @@ return
 else 
 
 % TLE variables extraction 
-
 selected example answers = cell(1,1); 
 count=1; 
 for i=1:size(indx,2) 
-
-for j=1:3 
-selected example answersf1gfcount,1} 
-= possible example 
-
-answersfindx(i),1gfjg; 
-count=count+1; 
-
+  for j=1:3 
+    selected_example_answers{1}{count,1} = possible_example_answers{indx(i),1}{j}; 
+    count=count+1; 
+  end 
 end 
-end 
-
-1 
-
-
-
-CHAPTER 
-1. 
-MATLAB 
-CODE 
-
-
 % Find the total number of satellites in the file 
-
-num satellites = size(indx,2); 
-
+num_satellites = size(indx,2); 
 % Initialize array 
-
-sat id line = zeros(1,num 
-
-satellites); 
-line count = 1; 
-for i=1:num 
-
-satellites 
-
-% Take every 3rd line 
-
-sat id line(i) = line count; 
-txt data = textscan(selected example answersf1gfline count,1g,'%s %s %s %s %s %s %s %s %s'); 
-
-OrbitData.ID(i) = txt dataf1g; 
-if isempty(txt 
-
-dataf2g) 
-OrbitData.designation(i) = f''g; 
-
-else 
-
-OrbitData.designation(i) = txt dataf2g; 
-
-end 
-
-if isempty(txt 
-
-dataf3g) 
-OrbitData.PRN(i) = f''g; 
-
-else 
-
-OrbitData.PRN(i) = txt dataf3g; 
-
-end 
-
-% Jump to the next Satellite Name line 
-
-line count = line count + 3; 
-
+sat_id_line = zeros(1,num_satellites); 
+line_count = 1; 
+for i=1:num_satellites 
+  % Take every 3rd line 
+  sat_id_line(i) = line_count; 
+  txt_data = textscan(selected_example_answers{1}{line_count,1},'%s %s %s %s %s %s %s %s %s'); 
+  OrbitData.ID(i) = txt_data{1}; 
+  if isempty(txt_data{2}) 
+    OrbitData.designation(i) = {''}; 
+  else 
+    OrbitData.designation(i) = txt_data{2}; 
+  end 
+ 
+   if isempty(txt_data{3}) 
+    OrbitData.PRN(i) = {''}; 
+    else 
+    OrbitData.PRN(i) = txt_data{3}; 
+   end 
+  % Jump to the next Satellite Name line 
+  line_count = line_count + 3; 
 end 
 
 % Find the two lines corresponding to the spacecraft in question 
 
-for j=1:length(sat 
-
-id 
-
-line) 
+for j=1:length(sat_id_line) 
 
 % Find the first line of the first satellite 
 
-index = sat id 
+index = sat_id 
 
 line(j); 
 txt data second = textscan(selected example 
@@ -218,7 +167,7 @@ OrbitData.omega(j) = str2double(txt data secondf1,6g)*(pi/180); % Argument of th
 OrbitData.M(j) = str2double(txt data secondf1,7g)*(pi/180); % Mean anomaly [deg] to [rad] 
 n = str2double(txt data secondf1,8g); % Unperturbed mean motion [rev/day] 
 OrbitData.n(j) = n*2*pi/24/60/60; % Unperturbed mean motion [rad/s] 
-OrbitData.a(j) = ( mu / OrbitData.n(j)ˆ2 )ˆ(1/3); % Semi?major axis [m] 
+OrbitData.a(j) = ( mu / OrbitData.n(j)ï¿½2 )ï¿½(1/3); % Semi?major axis [m] 
 OrbitData.e(j) = str2double(txt data secondf1,5g)*1e?7; % Eccentricity [unitless] 
 
 % Compute the UTC date / time 
@@ -264,7 +213,7 @@ error('End program')
 
 end 
 
-OrbitData.Bstar(j) = base*1e?5*10ˆexpo; 
+OrbitData.Bstar(j) = base*1e?5*10ï¿½expo; 
 OrbitData.BC(j) = 1/12.741621/OrbitData.Bstar(j); 
 
 end 
@@ -375,7 +324,7 @@ MATLAB
 CODE 
 
 
-OrbitData.a(j) = ( mu / OrbitData.n(j)ˆ2 )ˆ(1/3); % Semi?major axis [m] 
+OrbitData.a(j) = ( mu / OrbitData.n(j)ï¿½2 )ï¿½(1/3); % Semi?major axis [m] 
 OrbitData.e(j) = str2double(txt dataf1,5gfindex+2g)*1e?7; % Eccentricity [unitless] 
 
 % Compute the UTC date / time 
@@ -413,7 +362,7 @@ error('end program')
 return 
 end 
 
-OrbitData.Bstar(j) = base*1e?5*10ˆexpo; 
+OrbitData.Bstar(j) = base*1e?5*10ï¿½expo; 
 OrbitData.BC(j) = 1/12.741621/OrbitData.Bstar(j); 
 
 end 
@@ -550,7 +499,7 @@ OrbitData.omega(j) = str2double(txt data secondf1,6g)*(pi/180); % Argument of th
 OrbitData.M(j) = str2double(txt data secondf1,7g)*(pi/180); % Mean anomaly [deg] to [rad] 
 n = str2double(txt data secondf1,8g); % Unperturbed mean motion [rev/day] 
 OrbitData.n(j) = n*2*pi/24/60/60; % Unperturbed mean motion [rad/s] 
-OrbitData.a(j) = ( mu / OrbitData.n(j)ˆ2 )ˆ(1/3); % Semi?major axis [m] 
+OrbitData.a(j) = ( mu / OrbitData.n(j)ï¿½2 )ï¿½(1/3); % Semi?major axis [m] 
 OrbitData.e(j) = str2double(txt data secondf1,5g)*1e?7; % Eccentricity [unitless] 
 
 % Compute the UTC date / time 
@@ -579,57 +528,31 @@ temp3 = txt data
 firstf1,7g; 
 
 if length(temp3f1g)== 7 
-base = str2double(temp3f1g(1:5)); 
-expo = str2double(temp3f1g(6:7)); 
-
+  base = str2double(temp3f1g(1:5)); 
+  expo = str2double(temp3f1g(6:7)); 
 elseif length(temp3f1g)== 8 
-base = str2double(temp3f1g(2:6)); 
-
-3 
-
-
-
-CHAPTER 
-1. 
-MATLAB 
-CODE 
-
-
-384 
-expo = str2double(temp3f1g(7:8)); 
-
-else 
-
-386 
+  base = str2double(temp3f1g(2:6)); 
+  expo = str2double(temp3f1g(7:8)); 
+else  
 fprintf('Error in ballistic coefficient calculationnn') 
-387 
-CreateStruct.Interpreter = 'tex'; 
-388 
-CreateStruct.WindowStyle = 'modal'; 
-389 
-msgbox('Error in ballistic coefficient calculationnn','Error',CreateStruct); 
-
-error('End program') 
-391 
+  CreateStruct.Interpreter = 'tex'; 
+  CreateStruct.WindowStyle = 'modal'; 
+  msgbox('Error in ballistic coefficient calculationnn','Error',CreateStruct); 
+  error('End program') 
 end 
-392 
-393 
-OrbitData.Bstar(j) = base*1e?5*10ˆexpo; 
-394 
+
+OrbitData.Bstar(j) = base*1e?5*10ï¿½expo; 
+
 OrbitData.BC(j) = 1/12.741621/OrbitData.Bstar(j); 
 
-396 
 end 
-397 
-398 
+
 end 
-399 
+
 
 
 % Simulation Parameters menu 
 
-401 
-402 
 input 
 
 simulation list = f'From Now to Tomorrow (24h simulation) and 500 time divisions', 'Other'g; 
@@ -1095,7 +1018,7 @@ for x=1:2
 623 
 [pos, vel, OrbitDataProp] = sgp4(tsince, OrbitData, i); 
 624 
-OrbitDataProp.a(i) = ( mu / OrbitDataProp.n(i)ˆ2 )ˆ(1/3); 
+OrbitDataProp.a(i) = ( mu / OrbitDataProp.n(i)ï¿½2 )ï¿½(1/3); 
 OrbitDataProp.q(i) = OrbitDataProp.a(i)*(1?OrbitDataProp.e(i)); 
 626 
 627 
@@ -1151,14 +1074,14 @@ end
 
 646 
 647 
-f(i) = atan((?sinh(Fn(i))*sqrt(OrbitDataProp.e(i)ˆ2?1))/(cosh(Fn(i))?OrbitDataProp.e(i))); 
+f(i) = atan((?sinh(Fn(i))*sqrt(OrbitDataProp.e(i)ï¿½2?1))/(cosh(Fn(i))?OrbitDataProp.e(i))); 
 648 
 649 
 elseif OrbitDataProp.e(i) == 1 
 
 A(i) = (3/2)*M(i); 
 651 
-B(i) = (sqrt(A(i)ˆ2+1)+A(i))ˆ(1/3); 
+B(i) = (sqrt(A(i)ï¿½2+1)+A(i))ï¿½(1/3); 
 652 
 C(i) = B(i)?1/B(i); 
 653 
@@ -1183,7 +1106,7 @@ Eqn(M(i),OrbitDataProp.e(i));
 % Compute the true anomaly f. 
 
 661 
-y = sin(Ea)*sqrt(1?OrbitDataProp.e(i)ˆ2)/(1?OrbitDataProp.e(i)*cos(Ea)); 
+y = sin(Ea)*sqrt(1?OrbitDataProp.e(i)ï¿½2)/(1?OrbitDataProp.e(i)*cos(Ea)); 
 662 
 z = (cos(Ea)?OrbitDataProp.e(i))/(1?OrbitDataProp.e(i)*cos(Ea)); 
 663 
@@ -1247,7 +1170,7 @@ end
 % Step 8? 
 Finding Parameter or Semi?parameter 
 692 
-parameter(i) = OrbitDataProp.a(i)*(1?OrbitDataProp.e(i)ˆ2); 
+parameter(i) = OrbitDataProp.a(i)*(1?OrbitDataProp.e(i)ï¿½2); 
 693 
 694 
 % Step 9? 
@@ -1385,19 +1308,19 @@ A4 = dot(Q1,Q2);
 
 731 
 732 
-sin gamma = A2/sqrt(A1ˆ2+A2ˆ2); 
+sin gamma = A2/sqrt(A1ï¿½2+A2ï¿½2); 
 733 
-cos gamma = A1/sqrt(A1ˆ2+A2ˆ2); 
+cos gamma = A1/sqrt(A1ï¿½2+A2ï¿½2); 
 734 
-sin psi = A4/sqrt(A3ˆ2+A4ˆ2); 
+sin psi = A4/sqrt(A3ï¿½2+A4ï¿½2); 
 
-cos psi = A3/sqrt(A3ˆ2+A4ˆ2); 
+cos psi = A3/sqrt(A3ï¿½2+A4ï¿½2); 
 
 736 
 737 
-D1 = sqrt(A1ˆ2+A2ˆ2); 
+D1 = sqrt(A1ï¿½2+A2ï¿½2); 
 738 
-D2 = sqrt(A3ˆ2+A4ˆ2); 
+D2 = sqrt(A3ï¿½2+A4ï¿½2); 
 739 
 
 
@@ -1413,19 +1336,19 @@ psi*cos(f(sat1))+sin
 
 psi*sin(f(sat1)))); 
 742 
-Rcomplex(step count, num pairs) = parameter(sat1)ˆ2 * parameter(sat2)ˆ2 * ( D1*cos(f(sat2))*(cos gamma*cos(f(sat1))+sin gamma*sin(f(sat1))) + ... 
+Rcomplex(step count, num pairs) = parameter(sat1)ï¿½2 * parameter(sat2)ï¿½2 * ( D1*cos(f(sat2))*(cos gamma*cos(f(sat1))+sin gamma*sin(f(sat1))) + ... 
 743 
 D2*sin(f(sat2))*(cos 
 
 psi*cos(f(sat1))+sin 
 
-psi*sin(f(sat1))) )ˆ2? 
-parameter(sat1)ˆ2*parameter(sat2)ˆ2 + Sˆ2*( ... 
-parameter(sat1)ˆ2* ... 
+psi*sin(f(sat1))) )ï¿½2? 
+parameter(sat1)ï¿½2*parameter(sat2)ï¿½2 + Sï¿½2*( ... 
+parameter(sat1)ï¿½2* ... 
 744 
-(1+OrbitDataProp.e(sat2)*cos(f(sat2)))ˆ2 + parameter(sat2)ˆ2*(1+OrbitDataProp.e(sat1)*cos(f(sat1)))ˆ2 )? 
+(1+OrbitDataProp.e(sat2)*cos(f(sat2)))ï¿½2 + parameter(sat2)ï¿½2*(1+OrbitDataProp.e(sat1)*cos(f(sat1)))ï¿½2 )? 
 ... 
-2*Sˆ2*parameter(sat1)*parameter(sat2)* ... 
+2*Sï¿½2*parameter(sat1)*parameter(sat2)* ... 
 ( D1*cos(f(sat2))* ( cos 
 
 gamma*cos(f(sat1))+sin 
@@ -1437,8 +1360,8 @@ psi*cos(f(sat1))+sin psi*sin(f(sat1)) ) ) * ...
 746 
 (1+OrbitDataProp.e(sat1)*cos(f(sat1))) * (1+OrbitDataProp.e(sat2)*cos(f(sat2))); 
 747 
-Rv = sqrt((r(sat1)ˆ2 * r(sat2)ˆ2? 
-r1dotr2complexˆ2)/(r(sat1)ˆ2 + r(sat2)ˆ2? 
+Rv = sqrt((r(sat1)ï¿½2 * r(sat2)ï¿½2? 
+r1dotr2complexï¿½2)/(r(sat1)ï¿½2 + r(sat2)ï¿½2? 
 2*r1dotr2complex))? 
 body 
 
@@ -3091,18 +3014,12 @@ log == ?1
 1309 
 error('Cannot open log file.'); 
 end 
-
-1311 
-
-
-1312 
+  
 fprintf(fid 
 
 log, '%s: %snn', datestr(datetime('now', 'TimeZone', 'UTC')), 'InterLink ended successfully'); 
-1313 
+
 fclose(fid 
 
 log); % Closing log file 
-
-11 
 
