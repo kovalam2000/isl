@@ -153,57 +153,40 @@ for j=1:length(sat_id_line)
 
 % Find the first line of the first satellite 
 
-index = sat_id 
-
-line(j); 
-txt data second = textscan(selected example 
-
-answersf1gfindex+2,1g,'%s %s %s %s %s %s %s %s %s'); 
+index = sat_id_line(j); 
+txt_data_second = textscan(selected_example_answers{1}{index+2,1},'%s %s %s %s %s %s %s %s %s');
 
 % Translate two line element data into obital elements 
-OrbitData.i(j) = str2double(txt data secondf1,3g)*(pi/180); % Inclination [deg] to [rad] 
-OrbitData.RAAN(j) = str2double(txt data secondf1,4g)*(pi/180); % Right ascention of the ascending node[deg] to [rad] 
-OrbitData.omega(j) = str2double(txt data secondf1,6g)*(pi/180); % Argument of the periapsis [deg] to [rad] 
-OrbitData.M(j) = str2double(txt data secondf1,7g)*(pi/180); % Mean anomaly [deg] to [rad] 
-n = str2double(txt data secondf1,8g); % Unperturbed mean motion [rev/day] 
+OrbitData.i(j) = str2double(txt_data_second{1,3})*(pi/180); % Inclination [deg] to [rad] 
+OrbitData.RAAN(j) = str2double(txt_data_second{1,4})*(pi/180); % Right ascention of the ascending node[deg] to [rad] 
+OrbitData.omega(j) = str2double(txt_data_second{1,6})*(pi/180); % Argument of the periapsis [deg] to [rad] 
+OrbitData.M(j) = str2double(txt_data_second{1,7})*(pi/180); % Mean anomaly [deg] to [rad] 
+n = str2double(txt_data_second{1,8}); % Unperturbed mean motion [rev/day] 
 OrbitData.n(j) = n*2*pi/24/60/60; % Unperturbed mean motion [rad/s] 
-OrbitData.a(j) = ( mu / OrbitData.n(j)�2 )�(1/3); % Semi?major axis [m] 
-OrbitData.e(j) = str2double(txt data secondf1,5g)*1e?7; % Eccentricity [unitless] 
+OrbitData.a(j) = ( mu / OrbitData.n(j)^2 )^(1/3); % Semi-major axis [m] 
+OrbitData.e(j) = str2double(txt_data_second{1,5})*1-e7; % Eccentricity [unitless] 
 
 % Compute the UTC date / time 
-
-txt data first = textscan(selected 
-
-example 
-
-answersf1gfindex+1,1g,'%s %s %s %s %s %s %s %s %s'); 
-temp2 = txt data 
-
-firstf1,4g; 
+txt_data_first = textscan(selected_example_answers{1}{index+1,1},'%s %s %s %s %s %s %s %s %s'); 
+temp2 = txt_data_first{1,4}; 
 yy = str2double(temp2f1g(1:2)); 
 yyyy = 2000 + yy; 
 start = datenum([yyyy 0 0 0 0 0]); 
 secs = str2double(temp2f1g(3:length(temp2f1g)))*24*3600; 
 date1 = datevec(addtodate(start,floor(secs),'second')); 
 remainder = [0 0 0 0 0 mod(secs,1)]; 
-OrbitData.datefj} 
-= datestr(date1+remainder,'dd?mmm?yyyy HH:MM:SS.FFF'); 
+OrbitData.date{j} = datestr(date1+remainder,'dd-mmm-yyyy HH:MM:SS.FFF'); 
 
 % Compute ballistic coefficient in SI units 
-
-temp3 = txt data 
-
-firstf1,7g; 
-
-if length(temp3f1g)== 7 
-base = str2double(temp3f1g(1:5)); 
-expo = str2double(temp3f1g(6:7)); 
-
-elseif length(temp3f1g)== 8 
-base = str2double(temp3f1g(2:6)); 
-expo = str2double(temp3f1g(7:8)); 
-
-else 
+temp3 = txt_data_first{1,7}; 
+if length(temp3{1})== 7
+    base = str2double(temp3{1}(1:5));
+    expo = str2double(temp3f1g(6:7));
+    
+elseif length(temp3f1g)== 8
+    base = str2double(temp3f1g(2:6));
+    expo = str2double(temp3f1g(7:8));
+else
 
 fprintf('Error in ballistic coefficient calculationnn') 
 CreateStruct.Interpreter = 'tex'; 
