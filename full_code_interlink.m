@@ -181,11 +181,11 @@ OrbitData.date{j} = datestr(date1+remainder,'dd-mmm-yyyy HH:MM:SS.FFF');
 temp3 = txt_data_first{1,7}; 
 if length(temp3{1})== 7
     base = str2double(temp3{1}(1:5));
-    expo = str2double(temp3f1g(6:7));
+    expo = str2double(temp3{1}(6:7));
     
-elseif length(temp3f1g)== 8
-    base = str2double(temp3f1g(2:6));
-    expo = str2double(temp3f1g(7:8));
+elseif length(temp3{1})== 8
+    base = str2double(temp3{1}(2:6));
+    expo = str2double(temp3{1}(7:8));
 else
 
 fprintf('Error in ballistic coefficient calculationnn') 
