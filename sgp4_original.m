@@ -1,9 +1,7 @@
 %-------------------------------------------------------------------
-%------------------------------- sgp4 ----------------------------
-% Meysam Mahooti (2020). SGP4 (https://www.mathworks.com/matlabcentral/fileexchange/62013-sgp4), 
-% MATLAB Central File Exchange. Retrieved December 28, 2020.
+%------------------------------- sgp4 ------------------------------
 %-------------------------------------------------------------------
-function [pos, vel, OrbitDataProp] = sgp4(tsince, satdata, i)
+function [pos, vel] = sgp4_original(tsince, satdata)
 ae = 1.0;
 tothrd = (2.0/3.0);
 XJ3 = -2.53881e-6;
@@ -12,19 +10,6 @@ xkmper = 6378.135;
 ge = 398600.8; % Earth gravitational constant
 CK2 = (1.0826158e-3 / 2.0);
 CK4 = (-3.0 * -1.65597e-6 / 8.0);
-
-% Helper Variables
-TWOPI = 2*pi;
-MINUTES_PER_DAY = 1440;
-% All input values already in radians so no need to convert like
-satdata.xno = satdata.n(i) * TWOPI / MINUTES_PER_DAY;
-satdata.xmo = satdata.M(i);
-satdata.eo = satdata.e(i);
-satdata.bstar = satdata.Bstar(i);
-satdata.xincl = satdata.i(i);
-satdata.omegao = satdata.omega(i);
-satdata.xnodeo = satdata.RAAN(i);
-
 % Constants
 s = ae + 78 / xkmper;
 qo = ae + 120 / xkmper;
@@ -35,7 +20,7 @@ a1 = temp2^tothrd;
 cosio = cos (satdata.xincl);
 theta2 = (cosio^2);
 x3thm1 = 3.0 * theta2 - 1.0;
-eosq = (satdata.e(1)^2);
+eosq = (satdata.eo^2);
 betao2 = 1.0 - eosq;
 betao = sqrt(betao2);
 del1 = 1.5 * CK2 * x3thm1 / ((a1^2) * betao * betao2);
@@ -98,7 +83,7 @@ aycof = 0.25 * a3ovk2 * sinio;
 delmo = ((1.0 + eta * cos(satdata.xmo))^3);
 sinmo = sin(satdata.xmo);
 x7thm1 = 7.0 * theta2 - 1.0;
-if (isimp==0)
+if (isimp==0)	
     c1sq = (c1^2);
     d2 = 4.0 * aodp * tsi * c1sq;
     temp = d2 * tsi * c1 / 3.0;
@@ -158,9 +143,9 @@ while(1)
     temp7 = temp2;
     temp2 = epw;
     i = i+1;
-    if ((i>10) || (abs(epw - temp7) <= e6a))
-        break
-    end
+	if ((i>10) || (abs(epw - temp7) <= e6a))
+		break
+	end
 end
 % Short period preliminary quantities
 ecose = temp5 + temp6;
@@ -198,13 +183,12 @@ NV.v(1) = cos(xnodek);
 NV.v(2) = sin(xnodek);
 NV.v(3) = 0;
 for i=1:3
-    UV.v(i) = MV.v(i) * sin(uk) + NV.v(i) * cos(uk);
-    VV.v(i) = MV.v(i) * cos(uk) - NV.v(i) * sin(uk);
+	UV.v(i) = MV.v(i) * sin(uk) + NV.v(i) * cos(uk);
+	VV.v(i) = MV.v(i) * cos(uk) - NV.v(i) * sin(uk);
 end
 % position + velocity
 for i=1:3
-    pos.v(i) = rk * UV.v(i);
-    vel.v(i) = rdotk * UV.v(i) + rfdotk * VV.v(i);
+	pos.v(i) = rk * UV.v(i);
+	vel.v(i) = rdotk * UV.v(i) + rfdotk * VV.v(i);
 end
 [pos, vel] = Convert_Sat_State(pos, vel);
-OrbitDataProp = satdata;

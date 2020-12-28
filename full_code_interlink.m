@@ -299,8 +299,7 @@ elseif indx == 3
     prompt = 'How many TLE do you want to analyse-';
     dlgtitle = 'Paste TLE';
     dims = [1 69];
-    tle num answer = inputdlg(prompt,dlgtitle,dims);
-    
+    tle_num_answer = inputdlg(prompt,dlgtitle,dims);
     if isempty(tle_num_answer)
         disp('User selected Cancel');
         return
@@ -335,7 +334,7 @@ elseif indx == 3
     for i=1:num_satellites
         % Take every 3rd line
         sat_id_line(i) = line_count;
-        txt_data = textscan(tle_pasted_answerf1g(line_count,1:69),'%s %s %s %s %s %s %s %s %s');
+        txt_data = textscan(tle_pasted_answer{1}(line_count,1:69),'%s %s %s %s %s %s %s %s %s');
         OrbitData.ID(i) = txt_data{1};
         if isempty(txt_data{2})
             OrbitData.designation(i) = {''};
@@ -363,14 +362,14 @@ elseif indx == 3
         n = str2double(txt_data_second{1,8}); % Unperturbed mean motion [rev/day]
         OrbitData.n(j) = n*2*pi/24/60/60; % Unperturbed mean motion [rad/s]
         OrbitData.a(j) = ( mu / OrbitData.n(j)^2 )^(1/3); % Semi-major axis [m]
-        OrbitData.e(j) = str2double(txt_data_second{1,5})*1-e7; % Eccentricity [unitless]
-        % Compute the UTC date / time
+        OrbitData.e(j) = str2double(txt_data_second{1,5})*1e-7; % Eccentricity [unitless]
+        % Compute the UTC date / timef
         txt_data_first = textscan(selected_example_answers{1}{index+1,1},'%s %s %s %s %s %s %s %s %s');
         temp2 = txt_data_first{1,4};
-        yy = str2double(temp2f1g(1:2));
+        yy = str2double(temp2{1}(1:2));
         yyyy = 2000 + yy;
         start = datenum([yyyy 0 0 0 0 0]);
-        secs = str2double(temp2f1g(3:length(temp2f1g)))*24*3600;
+        secs = str2double(temp2{1}(3:length(temp2{1})))*24*3600;
         date1 = datevec(addtodate(start,floor(secs),'second'));
         remainder = [0 0 0 0 0 mod(secs,1)];
         OrbitData.date{j} = datestr(date1+remainder,'dd-mmm-yyyy HH:MM:SS.FFF');
@@ -379,12 +378,12 @@ elseif indx == 3
         
         temp3 = txt_data_first{1,7};
         
-        if length(temp3f1g)== 7
-            base = str2double(temp3f1g(1:5));
-            expo = str2double(temp3f1g(6:7));
+        if length(temp3{1})== 7
+            base = str2double(temp3{1}(1:5));
+            expo = str2double(temp3{1}(6:7));
         elseif length(temp3f1g)== 8
-            base = str2double(temp3f1g(2:6));
-            expo = str2double(temp3f1g(7:8));
+            base = str2double(temp3{1}(2:6));
+            expo = str2double(temp3{1}(7:8));
         else
             fprintf('Error in ballistic coefficient calculationnn')
             CreateStruct.Interpreter = 'tex';
@@ -636,8 +635,7 @@ for sat1=1:num_satellites-1
                 else
                     error('Eccentricity cannot be a negative value')
                 end
-                % Step 4- Finding primary body center to satellite distance
-                
+                % Step 4- Finding primary body center to satellite distance               
                 r(i) = (1+OrbitDataProp.e(i))*OrbitDataProp.q(i)/(1+OrbitDataProp.e(i)*cos(f(i)));
                 % Step 5- Finding standard orientation vectors
                 Px(i) = cos(OrbitDataProp.omega(i))*cos(OrbitDataProp.RAAN(i))-sin(OrbitDataProp.omega(i))*sin(OrbitDataProp.RAAN(i))*cos(OrbitDataProp.i(i));
@@ -647,7 +645,7 @@ for sat1=1:num_satellites-1
                 Qy(i) =-sin(OrbitDataProp.omega(i))*sin(OrbitDataProp.RAAN(i))+cos(OrbitDataProp.omega(i))*cos(OrbitDataProp.RAAN(i))*cos(OrbitDataProp.i(i));
                 Qz(i) = cos(OrbitDataProp.omega(i))*sin(OrbitDataProp.i(i));
                 % Step 6- Finding components of the primary body center to satellite vector in the orbital plane
-                xi(i) = r(i)*cos(f(i));
+                xi(i) = r(i)*cos(f(i)); % print xi and add for range between two satellites
                 eta(i) = r(i)*sin(f(i));
                 % Step 7- Finding primary body center to satellite vector
                 r_fullvector = xi(i)*[Px(i) Py(i) Pz(i)] + eta(i)*[Qx(i) Qy(i) Qz(i)];
@@ -657,8 +655,7 @@ for sat1=1:num_satellites-1
                 % Step 8- Finding Parameter or Semi-parameter
                 parameter(i) = OrbitDataProp.a(i)*(1-OrbitDataProp.e(i)^2);
                 % Step 9- Transformation for 3D visuals
-                % Adjust RAAN such that we are consisten with Earth's current
-                % orientation. This is a conversion to Longitude of the
+                % Adjust RAAN such that we are consisten with Earth's current orientation. This is a conversion to Longitude of the
                 % Ascending Node (LAN).
                 RAAN2 = OrbitDataProp.RAAN(i)- GMST;
                 % Convert to ECI and save the data.
@@ -699,7 +696,7 @@ for sat1=1:num_satellites-1
             
             r1dotr2complex = (parameter(sat1)*parameter(sat2)/((1+OrbitDataProp.e(sat1)*cos(f(sat1)))*(1+OrbitDataProp.e(sat2)*cos(f(sat2)))))* ...
                 (D1*cos(f(sat2))*(cos_gamma*cos(f(sat1))+sin_gamma*sin(f(sat1)))+D2*sin(f(sat2))*(cos_psi*cos(f(sat1))+sin_psi*sin(f(sat1))));
-            
+            % Visibility condition
             Rcomplex(step_count, num_pairs) = parameter(sat1)^2 * parameter(sat2)^2 * ( D1*cos(f(sat2))*(cos_gamma*cos(f(sat1))+sin_gamma*sin(f(sat1))) + ...
                 D2*sin(f(sat2))*(cos_psi*cos(f(sat1))+sin_psi*sin(f(sat1))) )^2-parameter(sat1)^2*parameter(sat2)^2 + S^2*parameter(sat1)^2* ...
                 (1+OrbitDataProp.e(sat2)*cos(f(sat2)))^2 + parameter(sat2)^2*(1+OrbitDataProp.e(sat1)*cos(f(sat1)))^2- ...
@@ -713,9 +710,9 @@ for sat1=1:num_satellites-1
             
             visibility = '--- Direct line of sight';
             
-            non_visibility= '--visibility';
+            non_visibility= '---Non visibility';
             t_todatetime = datetime(t, 'ConvertFrom', 'posixtime');
-            result_to_log = sprintf(pair_result, OrbitData.IDfsat1g, OrbitData.designationfsat1g, OrbitData.IDfsat2g, OrbitData.designationfsat2g, t_todatetime, ...
+            result_to_log = sprintf(pair_result, OrbitData.ID{sat1}, OrbitData.designation{sat1}, OrbitData.ID{sat2}, OrbitData.designation{sat2}, t_todatetime, ...
                 Rcomplex(step_count, num_pairs));
             
             fprintf(result_to_log); % Command window print
@@ -757,10 +754,10 @@ for sat1=1:num_satellites-1
             csv_data{step_count,4,sat1,num_pairs} = t;
             csv_data{step_count,3,sat2,num_pairs} = t_todatetime;
             csv_data{step_count,4,sat2,num_pairs} = t;
-            csv_data{step_count,5,sat1,num_pairs} = strcat(OrbitData.IDfsat1g,OrbitData.designationfsat1g);
-            csv_data{step_count,6,sat1,num_pairs} = strcat(OrbitData.IDfsat2g,OrbitData.designationfsat2g);
-            csv_data{step_count,5,sat2,num_pairs} = strcat(OrbitData.IDfsat1g,OrbitData.designationfsat1g);
-            csv_data{step_count,6,sat2,num_pairs} = strcat(OrbitData.IDfsat2g,OrbitData.designationfsat2g);
+            csv_data{step_count,5,sat1,num_pairs} = strcat(OrbitData.ID{sat1},OrbitData.designation{sat1});
+            csv_data{step_count,6,sat1,num_pairs} = strcat(OrbitData.ID{sat2},OrbitData.designation{sat2});
+            csv_data{step_count,5,sat2,num_pairs} = strcat(OrbitData.ID{sat1},OrbitData.designation{sat1});
+            csv_data{step_count,6,sat2,num_pairs} = strcat(OrbitData.ID{sat2},OrbitData.designation{sat2});
             csv_data{step_count,9,sat1,num_pairs} = Rcomplex(step_count,num_pairs);
             csv_data{step_count,10,sat1,num_pairs} = Rv;
             csv_data{step_count,9,sat2,num_pairs} = Rcomplex(step_count,num_pairs);
@@ -777,7 +774,7 @@ if isfile(fullfile([pwd, '\Data Output Files'],'InterlinkData.csv'))
 else
     disp('Creating CSV file...') % Command window print
     fprintf(fid_log, '%s: %s\n', datestr(datetime('now', 'TimeZone', 'UTC')), 'Creating CSV file...'); % Log print
-    fid_csv = fopen(fullfile([pwd, 'nData Output Files'],'InterlinkData.csv'), 'w');
+    fid_csv = fopen(fullfile([pwd, '\Data Output Files'],'InterlinkData.csv'), 'w');
     if fid_csv == -1
         error('Cannot open file');
     end
@@ -788,7 +785,7 @@ fprintf(fid_csv,'%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;
 end
 disp('Inserting data to CSV file...') % Command window print
 fprintf(fid_log, '%s: %s\n', datestr(datetime('now', 'TimeZone', 'UTC')), 'Inserting data to CSV file...'); % Log print
-fid_csv = fopen(fullfile([pwd, 'nData Output Files'],'InterlinkData.csv'), 'a');
+fid_csv = fopen(fullfile([pwd, '\Data Output Files'],'InterlinkData.csv'), 'a');
 
 if fid_csv>0
     num_pairs = 0;
@@ -824,10 +821,8 @@ fclose(fid_log); % Closing log file
 % tSim_strings = fstep count-1g;  
 % for t=1:step_count-1 
 % 
-% tSim stringsft} 
-% = datestr(datetime(tSim(t),'ConvertFrom','posixtime')); 
-% 876 
-% end 
+% tSim stringsft} = datestr(datetime(tSim(t),'ConvertFrom','posixtime')); 
+% % end 
 % 877 
 % 878 
 % plot list = f'Static Plot', 'Live Plots. See color legend in 1 vs 1 plot to identify satellites. It may take a lot of time. MP4 Animation will be created in Data ... 
