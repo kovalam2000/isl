@@ -68,29 +68,17 @@ if tf == 0
 end
 
 if indx == 1
-    input_examples_list = {'EGYPTSAT 1', 'TRMM', 'GOES_3', 'NOAA_3', 'NAVSTAR_46'};
+    input_examples_list = {'ISS', 'ONEWEB-0010'};
     [indx,tf] = listdlg('ListString',input_examples_list,'Name','Two Line Element (TLE)','PromptString','Select two or more TLE to analyse:',...
         'SelectionMode','multiple','ListSize',[500,300],'OKString','Run','CancelString','Quit');
     
     % Hard-Coded TLE as input examples
-    possible_example_answers = {{'EGYPTSAT_1                                                      ';
-        '1 31117U 07012A 08142.74302347 .00000033 00000-0 13654-4 0 2585 ';
-        '2 31117 098.0526 218.7638 0007144 061.2019 298.9894 14.69887657 58828'};
-        {'TRMM ';
-        '1 25063U 97074A 08141.84184490 .00002948 00000-0 41919-4 0 7792 ';
-        '2 25063 034.9668 053.5865 0001034 271.1427 088.9226 15.55875272598945'};
-        {'GOES_3 ';
-        '1 10953U 78062A 08140.64132336-.00000110 00000-0 10000-3 0 1137 ';
-        '2 10953 014.2164 003.1968 0001795 336.4858 023.4617 01.00280027 62724'};
-        {'NOAA_3 ';
-        '1 06920U 73086A 08141.92603915-.00000030 00000-0 +10000-3 0 00067 ';
-        '2 06920 101.7584 171.9430 0006223 187.3360 172.7614 12.40289355563642'};
-        {'NAVSTAR_46 ';
-        '1 25933U 99055A 08142.14123352 .00000019 00000-0 10000-3 0 00126 ';
-        '2 25933 051.0650 222.9439 0079044 032.8625 327.6958 02.00568102 63184'};
-        {'EGYPTSAT_1 ';
-        '1 31117U 07012A 08142.74302347 .00000033 00000-0 13654-4 0 2585 ';
-        '2 31117 098.0526 218.7638 0007144 061.2019 298.9894 14.69887657 58828'}};
+    possible_example_answers = {{'ISS (ZARYA)                                  ';
+        '1 25544U 98067A 20363.59392067  .00000558  00000-0  18138-4 0 9998 ';
+        '2 25544  51.6459 106.5424 0001311 163.9929 321.3790 15.49230614262155'};
+        {'ONEWEB-0010                                                          ';
+        '1 44058U 19010B 20362.66668981 .00040638  00000-0  97983-1 0 9993 ';
+        '2 44058  87.9168 295.7425 0001696 75.0447 241.8035 13.21785907 1721'};};
     
     if tf == 0
         disp('User selected Quit');
@@ -406,14 +394,14 @@ end
 disp('Starting InterLink...')
 if indx == 1
     % Simulation Parameters
-    start_time = '22-May-2008 12:00:00';
+    start_time = '30-Dec-2020 12:00:00';
     %start time = datetime('now', 'TimeZone', 'UTC');
     start_time_unix = posixtime(datetime(start_time));
     fprintf('Conversion of the simulation start time: %s is %d in Unix timenn', start_time, start_time_unix); % Command window print
     start_time_to_log = sprintf('Conversion of the simulation start time: %s is %d in Unix time', start_time, start_time_unix);
     
     t = start_time_unix; % Start simulation time in Unix ... time [s]
-    end_time = '23-May-2008 00:00:00';
+    end_time = '30-Dec-2020 00:00:00';
     %end
     time = datetime('now', 'TimeZone', 'UTC') + days(1);
     end_time_unix = posixtime(datetime(end_time));
@@ -645,7 +633,7 @@ for sat1=1:num_satellites-1
                 Qy(i) =-sin(OrbitDataProp.omega(i))*sin(OrbitDataProp.RAAN(i))+cos(OrbitDataProp.omega(i))*cos(OrbitDataProp.RAAN(i))*cos(OrbitDataProp.i(i));
                 Qz(i) = cos(OrbitDataProp.omega(i))*sin(OrbitDataProp.i(i));
                 % Step 6- Finding components of the primary body center to satellite vector in the orbital plane
-                xi(i) = r(i)*cos(f(i)); % print xi and add for range between two satellites
+                xi(i) = r(i)*cos(f(i));
                 eta(i) = r(i)*sin(f(i));
                 % Step 7- Finding primary body center to satellite vector
                 r_fullvector = xi(i)*[Px(i) Py(i) Pz(i)] + eta(i)*[Qx(i) Qy(i) Qz(i)];
@@ -762,7 +750,7 @@ for sat1=1:num_satellites-1
             csv_data{step_count,10,sat1,num_pairs} = Rv;
             csv_data{step_count,9,sat2,num_pairs} = Rcomplex(step_count,num_pairs);
             csv_data{step_count,10,sat2,num_pairs} = Rv;
-            
+                
             step_count = step_count + 1;
         end
         t = start_time_unix;
@@ -805,281 +793,136 @@ if fid_csv>0
 end
 fclose(fid_csv); % Closing InterlinkData csv file
 fclose(fid_log); % Closing log file
-% %% Plot the orbit 
-% % Plot the Earth 
-% % If you want a color Earth, use 'neomap', 'BlueMarble' 
-% % If you want a black and white Earth, use 'neomap', 'BlueMarble 
-% % A smaller sample step gives a finer resolution Earth 
-% disp('Opening plot module...') % Command window print 
-% fid_log = fopen(fullfile([pwd, '/logs'], full_name_log), 'a'); % Setting log file to append mode 
-% if fid_log == -1 
-% error('Cannot open log file.'); 
-% end 
-% fprintf(fid_log, '%s: %s\n', datestr(datetime('now', 'TimeZone', 'UTC')), 'Opening plot module...'); 
-% fclose(fid_log); % Closing log file 
-% % Simualtion Unix time vector converted to DateTimes strings inside a cell 
-% tSim_strings = fstep count-1g;  
-% for t=1:step_count-1 
-% 
-% tSim stringsft} = datestr(datetime(tSim(t),'ConvertFrom','posixtime')); 
-% % end 
-% 877 
-% 878 
-% plot list = f'Static Plot', 'Live Plots. See color legend in 1 vs 1 plot to identify satellites. It may take a lot of time. MP4 Animation will be created in Data ... 
-% 
-% Output Files (Warning: do not move the figure windows while recording).'g; 
-% 879 
-% [indx,:] = listdlg('ListString',plot list,'Name','3D Plot','PromptString','Select a plot ... 
-% mode:','SelectionMode','single','ListSize',[1000,300],'OKString','Plot','CancelString','Quit'); 
-% 
-% 881 
-% colors = lines(num 
-% 
-% satellites); 
-% 
-% 882 
-% 883 
-% if indx == 2 
-% 884 
-% % Static plot 
-% 
-% h1 = plotearth('neomap', 'BlueMarble bw', 'SampleStep', 1); 
-% 886 
-% for i=1:num 
-% 
-% satellites 
-% 887 
-% plot3(RSave(:,1,i) / body 
-% 
-% radius, RSave(:,2,i) / body radius, RSave(:,3,i) / body radius,... 
-% 888 
-% 'color', colors(i,:), 'LineWidth', 1, 'DisplayName', strcat(OrbitData.IDfig, OrbitData.designationfig,'- 
-% Orbit')) 
-% 889 
-% plot3(RSave(1,1,i) / body 
-% 
-% radius, RSave(1,2,i) / body radius, RSave(1,3,i) / body radius,... 
-% 
-% '.', 'color', colors(i,:), 'MarkerSize', 30, 'DisplayName', strcat(OrbitData.IDfig, OrbitData.designationfig,'- 
-% Starting Point')) 
-% 891 
-% end 
-% 892 
-% lgd2 = legend('AutoUpdate', 'off'); 
-% 893 
-% 894 
-% % Live 3D plot 
-% 
-% disp('Do not maximize Live Plot window (animation being recorded)') % Command window print 
-% 
-% fid_log = fopen(fullfile([pwd, '/logs'], full name log), 'a'); % Setting log file to append mode 
-% 
-% 898 
-% 899 
-% if fid 
-% 
-% log == -1 
-% 
-% error('Cannot open log file.'); 
-% 901 
-% end 
-% 902 
-% 903 
-% fprintf(fid 
-% 
-% log, '%s: %snn', datestr(datetime('now', 'TimeZone', 'UTC')), 'Do not maximize Live Plot window (animation being recorded)'); 
-% 904 
-% fprintf(fid 
-% 
-% log, '%s: %snn', datestr(datetime('now', 'TimeZone', 'UTC')), 'The video''s width and height has been padded to be a multiple of two as required by ... 
-% the H.264 codec'); 
-% fclose(fid 
-% 
-% log); % Closing log file 
-% 
-% 906 
-% 907 
-% num_pairs = 0; 
-% 908 
-% num frames = 0; 
-% 909 
-% 
-% 
-% % Counting number of frames for preallocation 
-% 
-% 911 
-% for sat1=1:num_satellites-1 
-% 912 
-% for sat2=sat1+1:num 
-% 
-% satellites 
-% 913 
-% num_pairs = num_pairs + 1; 
-% 914 
-% for t=1:step 
-% 
-% count-1 
-% for x=1:2 
-% 916 
-% num 
-% 
-% frames = num frames + 1; 
-% 917 
-% end 
-% 918 
-% end 
-% 919 
-% end 
-% 
-% end 
-% 
-% 921 
-% 922 
-% Frames = moviein(num 
-% 
-% frames); 
-% 923 
-% num_pairs = 0; 
-% 924 
-% % Create the video writer with the desired fps 
-% 
-% writerObj = VideoWriter(fullfile([pwd, 'nData Output Files'],sprintf('LivePlot-%s.mp4',sprintf('%s-%s',date log,name logf1g))), 'MPEG-4'); 
-% 926 
-% writerObj.FrameRate = 10; 
-% 927 
-% % Set the seconds per image 
-% 928 
-% % Open the video writer 
-% 929 
-% open(writerObj); 
-% 
-% 931 
-% h2 = plotearth('neomap', 'BlueMarble bw', 'SampleStep', 1); 
-% 932 
-% for sat1=1:num_satellites-1 
-% 933 
-% 934 
-% for sat2=sat1+1:num 
-% 
-% satellites 
-% 
-% num_pairs = num_pairs + 1; 
-% 936 
-% hold on 
-% 937 
-% 938 
-% for t=1:step 
-% 
-% count-1 
-% 939 
-% i = sat1; 
-% 
-% for x=1:2 
-% 941 
-% if Rcomplex(t, num_pairs)< 
-% 0 && i == sat1 
-% 942 
-% curve = animatedline('LineWidth',2,'color', [100, 255, 110] / 255, 'DisplayName', 'Visibility', 'HandleVisibility', 'on'); % Green color 
-% 943 
-% elseif Rcomplex(t, num_pairs) 0 && i == sat1 
-% 944 
-% curve = animatedline('LineWidth',2,'color', [225, 90, 90] / 255, 'DisplayName', 'Non-visibility', 'HandleVisibility', 'on'); % Red color 
-% 
-% elseif Rcomplex(t, num_pairs)< 
-% 0 && i == sat2 
-% 946 
-% curve = animatedline('LineWidth',2,'color', [100, 255, 110] / 255, 'DisplayName', 'Visibility', 'HandleVisibility', 'off'); % Green color 
-% 947 
-% elseif Rcomplex(t, num_pairs) 0 && i == sat2 
-% 948 
-% curve = animatedline('LineWidth',2,'color', [225, 90, 90] / 255, 'DisplayName', 'Non-visibility', 'HandleVisibility', 'off'); % Red color 
-% 949 
-% end 
-% 
-% if i == sat1 
-% 951 
-% head1 = scatter3(RSave(t,1,sat1) / body radius, RSave(t,2,sat1) / body radius, RSave(t,3,sat1) / body radius, 'filled', 'MarkerFaceColor', ... 
-% 
-% colors(sat1,:),... 
-% 952 
-% 'DisplayName', strcat(OrbitData.IDfsat1g, OrbitData.designationfsat1g), 'HandleVisibility', 'on'); 
-% 953 
-% elseif i == sat2 
-% 954 
-% head2 = scatter3(RSave(t,1,sat2) / body radius, RSave(t,2,sat2) / body radius, RSave(t,3,sat2) / body radius, 'filled', 'MarkerFaceColor', ... 
-% 
-% colors(sat2,:),... 
-% 
-% 'DisplayName', strcat(OrbitData.IDfsat2g, OrbitData.designationfsat2g), 'HandleVisibility', 'on'); 
-% 956 
-% end 
-% 957 
-% addpoints(curve, RSave(1:t,1,i) / body radius, RSave(1:t,2,i) / body radius, RSave(1:t,3,i) / body radius); 
-% 958 
-% drawnow; 
-% 959 
-% F = getframe(gcf); 
-% 
-% writeVideo(writerObj, F); 
-% 961 
-% pause(0.01) 
-% 962 
-% i = sat2; 
-% 963 
-% end 
-% 964 
-% 
-% 
-% lgd = legend(tSim stringsftg); 
-% 966 
-% lgd.FontSize = 15; 
-% 967 
-% delete(head1); 
-% 968 
-% delete(head2); 
-% 969 
-% end 
-% 
-% 971 
-% end 
-% 
-% end 
-%  
-% 
-% 
-% % Close the writer object 
-% 
-% close(writerObj); 
-% 
-% elseif indx == 1 
-% 979 
-% % Static plot 
-% 
-% h1 = plotearth('neomap', 'BlueMarble bw', 'SampleStep', 1); 
-% 981 
-% for i=1:num 
-% 
-% satellites 
-% 982 
-% plot3(RSave(:,1,i) / body 
-% 
-% radius, RSave(:,2,i) / body radius, RSave(:,3,i) / body radius,... 
-% 983 
-% 'color', colors(i,:), 'LineWidth', 1, 'DisplayName', strcat(OrbitData.IDfig, OrbitData.designationfig,'- 
-% Orbit')) 
-% 984 
-% plot3(RSave(1,1,i) / body 
-% 
-% radius, RSave(1,2,i) / body radius, RSave(1,3,i) / body radius,... 
-% 
-% '.', 'color', colors(i,:), 'MarkerSize', 30, 'DisplayName', strcat(OrbitData.IDfig, OrbitData.designationfig,'- 
-% Starting Point')) 
-% 986 
-% end 
-% 987 
-% lgd2 = legend(); 
-% 988 
-% end 
-% 989 
-% 
-% 
+%% Plot the orbit 
+% Plot the Earth 
+% If you want a color Earth, use 'neomap', 'BlueMarble' 
+% If you want a black and white Earth, use 'neomap', 'BlueMarble 
+% A smaller sample step gives a finer resolution Earth 
+disp('Opening plot module...') % Command window print
+fid_log = fopen(fullfile([pwd, '/logs'], full_name_log), 'a'); % Setting log file to append mode
+if fid_log == -1
+    error('Cannot open log file.');
+end
+fprintf(fid_log, '%s: %s\n', datestr(datetime('now', 'TimeZone', 'UTC')), 'Opening plot module...');
+fclose(fid_log); % Closing log file
+% Simualtion Unix time vector converted to DateTimes strings inside a cell
+tSim_strings = {step_count-1};
+for t=1:step_count-1
+    tSim_strings{t} = datestr(datetime(tSim(t),'ConvertFrom','posixtime'));
+end
+plot_list = {'Static Plot', 'Live Plots. See color legend in 1 vs 1 plot to identify satellites. It may take a lot of time MP4 Animation will be created in Data Output Files (Warning: do not move the figure windows while recording).'};
+
+[indx,tf] = listdlg('ListString',plot_list,'Name','3D Plot','PromptString','Select a plot mode:','SelectionMode','single','ListSize',[1000,300],'OKString','Plot','CancelString','Quit');
+
+colors = lines(num_satellites);
+
+if indx == 2
+    
+    % Static plot
+    
+    h1 = plotearth('neomap', 'BlueMarble bw', 'SampleStep', 1);
+    
+    for i=1:num_satellites
+        
+        plot3(RSave(:,1,i) / body_radius, RSave(:,2,i) / body_radius, RSave(:,3,i) / body_radius,...
+            'color', colors(i,:), 'LineWidth', 1, 'DisplayName', strcat(OrbitData.ID{i}, OrbitData.designation{i},'- Orbit'))
+        plot3(RSave(1,1,i) / body_radius, RSave(1,2,i) / body_radius, RSave(1,3,i) / body_radius,...
+            '.', 'color', colors(i,:), 'MarkerSize', 30, 'DisplayName', strcat(OrbitData.ID{i}, OrbitData.designation{i},'- Starting Point'))
+    end
+    lgd2 = legend('AutoUpdate', 'off');
+    % Live 3D plot
+    
+    disp('Do not maximize Live Plot window (animation being recorded)') % Command window print
+    
+    fid_log = fopen(fullfile([pwd, '/logs'], full_name_log), 'a'); % Setting log file to append mode
+    if fid_log == -1
+        error('Cannot open log file.');
+    end
+    fprintf(fid_log, '%s: %s\n', datestr(datetime('now', 'TimeZone', 'UTC')), 'Do not maximize Live Plot window (animation being recorded)');
+    fprintf(fid_log, '%s: %s\n', datestr(datetime('now', 'TimeZone', 'UTC')), 'The video''s width and height has been padded to be a multiple of two as required by the H.264 codec');
+    fclose(fid_log); % Closing log file
+    
+    num_pairs = 0;
+    num_frames = 0;
+    % Counting number of frames for preallocation
+    for sat1=1:num_satellites-1
+        for sat2=sat1+1:num_satellites
+            num_pairs = num_pairs + 1;
+            for t=1:step            
+                count-1
+                for x=1:2
+                    num_frames = num_frames + 1;
+                end
+            end
+        end
+        
+    end
+    
+    Frames = moviein(num_frames);
+    num_pairs = 0;
+    % Create the video writer with the desired fps
+    
+    writerObj = VideoWriter(fullfile([pwd, 'nData Output Files'],sprintf('LivePlot-%s.mp4',sprintf('%s-%s',date_log,name_log{i}))), 'MPEG-4');
+    writerObj.FrameRate = 10;
+    % Set the seconds per image
+    % Open the video writer
+    open(writerObj);
+    h2 = plotearth('neomap', 'BlueMarble bw', 'SampleStep', 1);
+    
+    for sat1=1:num_satellites-1
+        for sat2=sat1+1:num_satellites
+            num_pairs = num_pairs + 1;
+            hold on
+            for t=1:step_count-1
+                i = sat1;
+                
+                for x=1:2
+                    if Rcomplex(t, num_pairs)< 0 && i == sat1
+                        curve = animatedline('LineWidth',2,'color', [100, 255, 110] / 255, 'DisplayName', 'Visibility', 'HandleVisibility', 'on'); % Green color
+                    elseif Rcomplex(t, num_pairs) >= 0 && i == sat1
+                        curve = animatedline('LineWidth',2,'color', [225, 90, 90] / 255, 'DisplayName', 'Non-visibility', 'HandleVisibility', 'on'); % Red color
+                        
+                    elseif Rcomplex(t, num_pairs)< 0 && i == sat2
+                        
+                        curve = animatedline('LineWidth',2,'color', [100, 255, 110] / 255, 'DisplayName', 'Visibility', 'HandleVisibility', 'off'); % Green color
+                    elseif Rcomplex(t, num_pairs) >= 0 && i == sat2
+                        curve = animatedline('LineWidth',2,'color', [225, 90, 90] / 255, 'DisplayName', 'Non-visibility', 'HandleVisibility', 'off'); % Red color
+                    end
+                    
+                    if i == sat1
+                        head1 = scatter3(RSave(t,1,sat1) / body_radius, RSave(t,2,sat1) / body_radius, RSave(t,3,sat1) / body_radius, 'filled', 'MarkerFaceColor', colors(sat1,:),...
+                            'DisplayName', strcat(OrbitData.IDfsat1g, OrbitData.designationfsat1g), 'HandleVisibility', 'on');
+                    elseif i == sat2
+                        head2 = scatter3(RSave(t,1,sat2) / body_radius, RSave(t,2,sat2) / body_radius, RSave(t,3,sat2) / body_radius, 'filled', 'MarkerFaceColor', colors(sat2,:),...
+                            'DisplayName', strcat(OrbitData.IDfsat2g, OrbitData.designationfsat2g), 'HandleVisibility', 'on');
+                    end
+                    addpoints(curve, RSave(1:t,1,i) / body_radius, RSave(1:t,2,i) / body_radius, RSave(1:t,3,i) / body_radius);
+                    drawnow;
+                    F = getframe(gcf);
+                    
+                    writeVideo(writerObj, F);
+                    pause(0.01)
+                    i = sat2;
+                end
+                lgd = legend(tSim_strings{t});
+                lgd.FontSize = 15;
+                delete(head1);
+                delete(head2);
+            end
+        end
+    end
+    % Close the writer object
+    close(writerObj);
+elseif indx == 1
+    % Static plot
+    
+    h1 = plotearth('neomap', 'BlueMarble bw', 'SampleStep', 1);
+    for i=1:num_satellites
+        plot3(RSave(:,1,i) / body_radius, RSave(:,2,i) / body_radius, RSave(:,3,i) / body_radius,...
+            'color', colors(i,:), 'LineWidth', 1, 'DisplayName', strcat(OrbitData.ID{i}, OrbitData.designation{i},'- Orbit'))
+        plot3(RSave(1,1,i) / body_radius, RSave(1,2,i) / body_radius, RSave(1,3,i) / body_radius,'.', 'color', colors(i,:), 'MarkerSize', 30, 'DisplayName', strcat(OrbitData.ID{i}, OrbitData.designation{i},'- Starting Point'))
+    end
+    lgd2 = legend();
+end
+
+
