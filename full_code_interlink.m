@@ -470,7 +470,7 @@ for i=1:num_satellites
     xi = zeros(1, num_satellites); % Component of r vector in the periapsis line [m]
     eta = zeros(1, num_satellites); % Component of r vector in the descending node line [m]
     fullvector = [0 0 0]; % Intermediate vector to store the pair of r vectors [m]
-    vector = zeros(num_satellites, 3); % Vector from the center of the primary body to the satellite [m]
+    r_vector = zeros(num_satellites, 3); % Vector from the center of the primary body to the satellite [m]
     parameter = zeros(1, num_satellites); % Semi-parameter of the orbit [m]
     
     Rsimple1 = 0; % Visibility parameter [m]
@@ -848,8 +848,7 @@ if indx == 2
     for sat1=1:num_satellites-1
         for sat2=sat1+1:num_satellites
             num_pairs = num_pairs + 1;
-            for t=1:step            
-                count-1
+            for t=1:step_count-1
                 for x=1:2
                     num_frames = num_frames + 1;
                 end
@@ -862,7 +861,7 @@ if indx == 2
     num_pairs = 0;
     % Create the video writer with the desired fps
     
-    writerObj = VideoWriter(fullfile([pwd, 'nData Output Files'],sprintf('LivePlot-%s.mp4',sprintf('%s-%s',date_log,name_log{i}))), 'MPEG-4');
+    writerObj = VideoWriter(fullfile([pwd, '/Data Output Files'],sprintf('LivePlot-%s.mp4',sprintf('%s-%s',date_log,name_log{1}))), 'MPEG-4');
     writerObj.FrameRate = 10;
     % Set the seconds per image
     % Open the video writer
@@ -891,10 +890,10 @@ if indx == 2
                     
                     if i == sat1
                         head1 = scatter3(RSave(t,1,sat1) / body_radius, RSave(t,2,sat1) / body_radius, RSave(t,3,sat1) / body_radius, 'filled', 'MarkerFaceColor', colors(sat1,:),...
-                            'DisplayName', strcat(OrbitData.IDfsat1g, OrbitData.designationfsat1g), 'HandleVisibility', 'on');
+                            'DisplayName', strcat(OrbitData.ID{sat1}, OrbitData.designation{sat1}), 'HandleVisibility', 'on');
                     elseif i == sat2
                         head2 = scatter3(RSave(t,1,sat2) / body_radius, RSave(t,2,sat2) / body_radius, RSave(t,3,sat2) / body_radius, 'filled', 'MarkerFaceColor', colors(sat2,:),...
-                            'DisplayName', strcat(OrbitData.IDfsat2g, OrbitData.designationfsat2g), 'HandleVisibility', 'on');
+                            'DisplayName', strcat(OrbitData.ID{sat2}, OrbitData.designation{sat2}), 'HandleVisibility', 'on');
                     end
                     addpoints(curve, RSave(1:t,1,i) / body_radius, RSave(1:t,2,i) / body_radius, RSave(1:t,3,i) / body_radius);
                     drawnow;
