@@ -394,14 +394,14 @@ end
 disp('Starting InterLink...')
 if indx == 1
     % Simulation Parameters
-    start_time = '30-Dec-2020 12:00:00';
+    start_time = '30-Dec-2020 00:00:00';
     %start time = datetime('now', 'TimeZone', 'UTC');
     start_time_unix = posixtime(datetime(start_time));
     fprintf('Conversion of the simulation start time: %s is %d in Unix timenn', start_time, start_time_unix); % Command window print
     start_time_to_log = sprintf('Conversion of the simulation start time: %s is %d in Unix time', start_time, start_time_unix);
     
     t = start_time_unix; % Start simulation time in Unix ... time [s]
-    end_time = '30-Dec-2020 00:00:00';
+    end_time = '30-Dec-2020 12:00:00';
     %end
     time = datetime('now', 'TimeZone', 'UTC') + days(1);
     end_time_unix = posixtime(datetime(end_time));
@@ -580,8 +580,8 @@ for sat1=1:num_satellites-1
             
             for x=1:2
                 [pos, vel, OrbitDataProp] = sgp4(tsince, OrbitData, i);
-                OrbitDataProp.a(i) = ( mu / OrbitDataProp.n(i)^2 )^(1/3);
-                OrbitDataProp.q(i) = OrbitDataProp.a(i)*(1-OrbitDataProp.e(i));
+                OrbitDataProp.a(i) = ( mu / OrbitDataProp.n(i)^2 )^(1/3); % calculate semi major axis
+                OrbitDataProp.q(i) = OrbitDataProp.a(i)*(1-OrbitDataProp.e(i)); % periapsis distance 
                 % Step 1- Finding unperturbed mean motion
                 if OrbitDataProp.e(i)>= 0
                     n(i) = OrbitDataProp.n(i);
@@ -590,7 +590,7 @@ for sat1=1:num_satellites-1
                 end
                 % Step 2- Solving Mean Anomaly
                 M(i) = n(i)*(t-OrbitData.T(i));
-                % Step 3- Finding true anomaly
+                % Step 3- Finding true anomaly Newton Raphson Iteration
                 if OrbitDataProp.e(i) > 1
                     Fn(i) = 6*M(i);
                     error = 1;
