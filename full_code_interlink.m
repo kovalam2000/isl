@@ -479,7 +479,7 @@ for i=1:num_satellites
     Rangle = 0; % Visibility parameter [m]
     Rv = 0; % Distance from earth to satellite-satellite line [m]
     
-    csv_data = cell(num_steps, 27, 2, num_pairs); % Array of matrix to store relevant data
+    csv_data = cell(num_steps, 28, 2, num_pairs); % Array of matrix to store relevant data
     WindowsData = struct('start', zeros(num_satellites, num_satellites, 1000), 'end', zeros(num_satellites, num_satellites, 1000), 'time', zeros(num_satellites, ...
         num_satellites, 1000));
     WindowsDataFirst = struct('start', zeros(num_satellites, num_satellites, 10), 'end', zeros(num_satellites, num_satellites, 10), 'time', zeros(num_satellites, ...
@@ -693,6 +693,10 @@ for sat1=1:num_satellites-1
             
             Rv = sqrt((r(sat1)^2 * r(sat2)^2- r1dotr2complex^2)/(r(sat1)^2 + r(sat2)^2- 2*r1dotr2complex))- body_radius;
             
+            % Range Calculation with 2 Methods
+%             theta = sqrt(r(sat1)^2 + r(sat2)^2- 2*r1dotr2complex);
+              theta = sqrt(r(sat1)^2 + r(sat2)^2- 2*dot( r_vector(1,:), r_vector(2,:)));
+           
             % Step 9: Print Results for the given epoch time
             pair_result = 'The result for %s%s and %s%s at %s is %d ';
             
@@ -750,6 +754,8 @@ for sat1=1:num_satellites-1
             csv_data{step_count,10,sat1,num_pairs} = Rv;
             csv_data{step_count,9,sat2,num_pairs} = Rcomplex(step_count,num_pairs);
             csv_data{step_count,10,sat2,num_pairs} = Rv;
+            csv_data{step_count,28,sat1,num_pairs} = theta;
+            csv_data{step_count,28,sat2,num_pairs} = theta;
                 
             step_count = step_count + 1;
         end
@@ -768,8 +774,8 @@ else
     end
     headers = {'Simulation ID', 'Analysis', 'Simulation Date Time', 'Simualtion Unix Time', 'Satellite 1', 'Satellite 2', 'Satellites Number', 'Satellites Names', ...
         'R Visibility', 'R Margin', 'Satellite ID', 'PRN', ...
-        'Inclination', 'RAAN', 'Argument periapsis', 'Mean Anomaly', 'Mean Motion', 'Semimajor axis', 'Eccentricity', 'TLE Date', 'Bstar', 'Ballistic Coefficient', 'True Anomaly', 'Xi', 'Eta', 'Parameter', 'R vector'};
-fprintf(fid_csv,'%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s\n', headers{1:27});
+        'Inclination', 'RAAN', 'Argument periapsis', 'Mean Anomaly', 'Mean Motion', 'Semimajor axis', 'Eccentricity', 'TLE Date', 'Bstar', 'Ballistic Coefficient', 'True Anomaly', 'Xi', 'Eta', 'Parameter', 'R vector','Theta'};
+fprintf(fid_csv,'%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s\n', headers{1:28});
 end
 disp('Inserting data to CSV file...') % Command window print
 fprintf(fid_log, '%s: %s\n', datestr(datetime('now', 'TimeZone', 'UTC')), 'Inserting data to CSV file...'); % Log print
@@ -784,7 +790,7 @@ if fid_csv>0
             for i=1:num_steps
                 j = sat1;
                 for x=1:2
-                    fprintf(fid_csv,'%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s\n',csv_data{i,:,j,num_pairs});
+                    fprintf(fid_csv,'%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s;%s\n',csv_data{i,:,j,num_pairs});
                     j = sat2;
                 end
             end
@@ -923,5 +929,5 @@ elseif indx == 1
     end
     lgd2 = legend();
 end
-
+fclose('all');
 
