@@ -74,11 +74,11 @@ if indx == 1
     
     % Hard-Coded TLE as input examples
     possible_example_answers = {{'ISS (ZARYA)                                  ';
-        '1 25544U 98067A 20363.59392067  .00000558  00000-0  18138-4 0 9998 ';
-        '2 25544  51.6459 106.5424 0001311 163.9929 321.3790 15.49230614262155'};
+        '1 25544U 98067A   21017.72756503  .00000379  00000-0  14866-4 0  9994';
+        '2 25544  51.6466   6.9156 0000286 262.1360 269.8785 15.49296897265270'};
         {'ONEWEB-0010                                                          ';
-        '1 44058U 19010B 20362.66668981 .00040638  00000-0  97983-1 0 9993 ';
-        '2 44058  87.9168 295.7425 0001696 75.0447 241.8035 13.21785907 1721'};};
+        '1 44058U 19010B   21017.58334491  .00037171  00000-0  89642-1 0  9999';
+        '2 44058  87.9175 291.5634 0001554  81.1140 351.0287 13.21796179 91226'};};
     
     if tf == 0
         disp('User selected Quit');
@@ -384,7 +384,7 @@ elseif indx == 3
     end
 end
 % Simulation Parameters menu
-input_simulation_list = {'From Now to Tomorrow (24h simulation) and 500 time divisions', 'Other'};
+input_simulation_list = {'1 Day 30th December', 'Other'};
 [indx,tf] = listdlg('ListString',input_simulation_list,'Name','Simulation Time','PromptString','Select a UTC time for your analysis:',...
     'SelectionMode','single','ListSize',[500,300],'OKString','Next','CancelString','Quit');
 if tf == 0
