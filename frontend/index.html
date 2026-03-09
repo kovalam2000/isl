@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Satellite Interlink Simulation</title>
+
+  <!-- CesiumJS -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.123/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.123/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+
+  <!-- Chart.js for link timeline -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --panel:     #161b22;
+      --border:    #30363d;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --accent:    #58a6ff;
+      --green:     #3fb950;
+      --red:       #f85149;
+      --gold:      #ffd700;
+      --blue:      #00bfff;
+      --panel-w:   340px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 13px; overflow: hidden; }
+
+    /* ── Layout ──────────────────────────────────────────────────── */
+    #layout { display: flex; height: 100vh; }
+
+    #sidebar {
+      width: var(--panel-w);
+      min-width: var(--panel-w);
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 10;
+    }
+
+    #map-wrap { flex: 1; position: relative; }
+    #cesiumContainer { width: 100%; height: 100%; }
+
+    /* ── Sidebar sections ────────────────────────────────────────── */
+    .section {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    label { display: block; color: var(--muted); margin-bottom: 3px; margin-top: 8px; font-size: 11px; }
+    label:first-of-type { margin-top: 0; }
+
+    select, input[type="text"], input[type="number"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 6px 8px;
+      font-size: 12px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    select:focus, input:focus { border-color: var(--accent); }
+    select option { background: var(--panel); }
+
+    /* search row */
+    .search-row { display: flex; gap: 6px; }
+    .search-row input { flex: 1; }
+    .search-row button { flex-shrink: 0; }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .range-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* Buttons */
+    button {
+      background: #21262d;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background .15s, border-color .15s;
+    }
+    button:hover { background: #30363d; border-color: var(--accent); }
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+      font-weight: 600;
+      width: 100%;
+      padding: 9px;
+      font-size: 13px;
+    }
+    button.primary:hover { background: #79c0ff; }
+    button.primary:disabled { background: #1f6feb; color: #444; cursor: not-allowed; }
+
+    /* Status badge */
+    #link-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 12px;
+      width: 100%;
+      justify-content: center;
+      margin-bottom: 10px;
+      transition: background .3s, color .3s;
+    }
+    #link-badge.linked   { background: rgba(63,185,80,.18); color: var(--green); border: 1px solid var(--green); }
+    #link-badge.blocked  { background: rgba(248,81,73,.18);  color: var(--red);   border: 1px solid var(--red);   }
+    #link-badge.unknown  { background: rgba(139,148,158,.1); color: var(--muted); border: 1px solid var(--border); }
+    .badge-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+    /* Metric rows */
+    .metric { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #1c2128; }
+    .metric:last-child { border-bottom: none; }
+    .metric-label { color: var(--muted); }
+    .metric-value { font-weight: 600; font-family: 'Courier New', monospace; font-size: 12px; }
+    .metric-value.good   { color: var(--green); }
+    .metric-value.bad    { color: var(--red); }
+    .metric-value.warn   { color: #e3b341; }
+    .metric-value.accent { color: var(--accent); }
+
+    /* Timeline chart */
+    #chart-wrap {
+      padding: 10px 14px;
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+    }
+    #chart-title { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+    #linkChart { max-height: 120px; }
+
+    /* Progress / spinner */
+    #spinner {
+      position: absolute;
+      inset: 0;
+      background: rgba(13,17,23,.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .2s;
+    }
+    #spinner.active { opacity: 1; pointer-events: all; }
+    .spin-ring {
+      width: 48px; height: 48px;
+      border: 4px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #spin-msg { margin-top: 14px; color: var(--muted); font-size: 13px; }
+
+    /* Collapsible link budget details */
+    details { margin-top: 6px; }
+    summary {
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      user-select: none;
+      padding: 4px 0;
+    }
+    summary:hover { color: var(--accent); }
+    .budget-explainer {
+      margin-top: 8px;
+      padding: 10px;
+      background: #0d1117;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.7;
+    }
+    .budget-explainer strong { color: var(--text); }
+
+    /* Playback controls overlay */
+    #playback {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(22,27,34,.92);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 5;
+      backdrop-filter: blur(6px);
+    }
+    #playback button { padding: 6px 14px; }
+    #playback button.active { background: var(--accent); color: #000; border-color: var(--accent); }
+    #speed-label { color: var(--muted); font-size: 11px; min-width: 52px; text-align: center; }
+    #speed-slider { width: 100px; accent-color: var(--accent); }
+    #current-time-display { color: var(--accent); font-family: monospace; font-size: 12px; min-width: 180px; text-align: center; }
+
+    /* Colour legend in sidebar */
+    .legend-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 12px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #f85149;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      z-index: 100;
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+      max-width: 80%;
+      text-align: center;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div id="layout">
+
+  <!-- ═══════════════════════════ SIDEBAR ══════════════════════════════ -->
+  <div id="sidebar">
+
+    <!-- Header -->
+    <div class="section" style="padding:18px 16px 14px;">
+      <div style="font-size:16px;font-weight:700;color:var(--text);letter-spacing:.02em;">
+        🛰 ISL Simulator
+      </div>
+      <div style="color:var(--muted);font-size:11px;margin-top:3px;">
+        Inter-Satellite Link Analysis
+      </div>
+    </div>
+
+    <!-- ── Satellite selection ──────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-title">Satellite Selection</div>
+
+      <label>Satellite 1 (gold)</label>
+      <select id="sat1-group">
+        <option value="">— choose group —</option>
+      </select>
+      <select id="sat1-select" style="margin-top:6px;">
+        <option value="">— choose satellite —</option>
+      </select>
+
+      <div style="margin:4px 0 2px;font-size:10px;color:var(--muted);">or search by name</div>
+      <div class="search-row">
+        <input type="text" id="sat1-search" placeholder="e.g. STARLINK-1234" />
+        <button id="sat1-search-btn">Find</button>
+      </div>
+      <div id="sat1-result" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:16px;"></div>
+
+      <label style="margin-top:14px;">Satellite 2 (blue)</label>
+      <select id="sat2-group">
+        <option value="">— choose group —</option>
+      </select>
+      <select id="sat2-select" style="margin-top:6px;">
+        <option value="">— choose satellite —</option>
+      </select>
+
+      <div style="margin:4px 0 2px;font-size:10px;color:var(--muted);">or search by name</div>
+      <div class="search-row">
+        <input type="text" id="sat2-search" placeholder="e.g. ONEWEB-0016" />
+        <button id="sat2-search-btn">Find</button>
+      </div>
+      <div id="sat2-result" style="font-size:11px;color:var(--muted);margin-top:4px;min-height:16px;"></div>
+    </div>
+
+    <!-- ── Simulation parameters ──────────────────────────────────── -->
+    <div class="section">
+      <div class="section-title">Simulation</div>
+      <label>Duration (hours)</label>
+      <input type="range" id="hours-slider" min="0.5" max="12" step="0.5" value="3" />
+      <div class="range-row"><span>0.5 h</span><span id="hours-val">3.0 h</span><span>12 h</span></div>
+
+      <label style="margin-top:10px;">Time step (seconds)</label>
+      <select id="step-select">
+        <option value="10">10 s  (high res)</option>
+        <option value="30" selected>30 s  (recommended)</option>
+        <option value="60">60 s</option>
+        <option value="120">120 s  (fast)</option>
+      </select>
+    </div>
+
+    <!-- ── Link budget configuration ─────────────────────────────── -->
+    <div class="section">
+      <div class="section-title">Link Budget (Ka-band ISL)</div>
+
+      <label>Frequency (GHz)</label>
+      <input type="range" id="freq-slider" min="1" max="60" step="1" value="26" />
+      <div class="range-row"><span>1</span><span id="freq-val">26 GHz</span><span>60</span></div>
+
+      <label>Tx Power (dBm)</label>
+      <input type="range" id="power-slider" min="20" max="60" step="1" value="40" />
+      <div class="range-row"><span>20</span><span id="power-val">40 dBm</span><span>60</span></div>
+
+      <label>Tx / Rx Antenna Gain (dBi)</label>
+      <input type="range" id="gain-slider" min="0" max="55" step="1" value="40" />
+      <div class="range-row"><span>0</span><span id="gain-val">35 dBi</span><span>55</span></div>
+
+      <label>Bandwidth (MHz)</label>
+      <select id="bw-select">
+        <option value="10">10 MHz</option>
+        <option value="100">100 MHz</option>
+        <option value="500" selected>500 MHz</option>
+        <option value="1000">1 GHz</option>
+        <option value="2000">2 GHz</option>
+      </select>
+
+      <label>Min Link Margin (dB)</label>
+      <input type="range" id="margin-slider" min="-10" max="20" step="1" value="3" />
+      <div class="range-row"><span>-10</span><span id="margin-val">3 dB</span><span>20</span></div>
+
+      <div id="max-range-preview" style="margin-top:8px;font-size:11px;color:var(--muted);">
+        Max ISL range: <span id="max-range-val" style="color:var(--accent);">—</span>
+      </div>
+
+      <details style="margin-top:10px;">
+        <summary>Why does the ISL signal fail?</summary>
+        <div class="budget-explainer">
+          <strong>Two failure modes:</strong><br><br>
+          <strong>1. Earth occultation</strong> — Earth physically blocks the straight-line path when the satellites are on opposite sides of the globe. Detected geometrically: if the closest point on the satellite-to-satellite line is within Earth's radius + 100 km atmosphere margin, the path is blocked.<br><br>
+          <strong>2. Insufficient link margin</strong> — The received signal is too weak. The dominant loss is <em>free-space path loss</em> (FSPL), which grows as:<br>
+          <code>FSPL = 20·log₁₀(4πdf/c)</code><br>
+          e.g. at 26 GHz, 5 000 km → FSPL ≈ 195 dB.<br><br>
+          The link closes when:<br>
+          <code>P_rx = P_tx + G_tx + G_rx − FSPL<br>
+          P_rx > N_floor + SNR_req + margin</code><br><br>
+          where <code>N_floor = kTB + NF</code> is the thermal noise floor.<br><br>
+          Increasing antenna gain (e.g. +5 dBi each side = +10 dB) or transmit power directly extends the maximum range. Higher frequency increases FSPL but allows smaller, higher-gain dish antennas.
+        </div>
+      </details>
+    </div>
+
+    <!-- ── Legend ─────────────────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-title">Legend</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--gold);"></div> Satellite 1 orbit trail</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--blue);"></div> Satellite 2 orbit trail</div>
+      <div class="legend-row" style="gap:8px;"><div style="width:24px;height:3px;background:var(--green);border-radius:2px;"></div> ISL active (LOS + margin OK)</div>
+      <div class="legend-row" style="gap:8px;"><div style="width:24px;height:2px;background:var(--red);border-radius:2px;border-top:2px dashed var(--red);"></div> ISL blocked / out of range</div>
+    </div>
+
+    <!-- Run button -->
+    <div class="section">
+      <button class="primary" id="run-btn">▶  Run Simulation</button>
+    </div>
+
+    <!-- ── Live status ─────────────────────────────────────────────── -->
+    <div class="section" id="status-section" style="display:none;">
+      <div class="section-title">Live Link Status</div>
+      <div id="link-badge" class="unknown">
+        <div class="badge-dot"></div>
+        <span id="badge-text">—</span>
+      </div>
+      <div id="reason-text" style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:10px;line-height:1.5;min-height:18px;"></div>
+
+      <div class="metric">
+        <span class="metric-label">Range</span>
+        <span class="metric-value accent" id="m-range">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">FSPL</span>
+        <span class="metric-value" id="m-fspl">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">P_rx</span>
+        <span class="metric-value" id="m-prx">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Noise floor</span>
+        <span class="metric-value" id="m-noise">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Link margin</span>
+        <span class="metric-value" id="m-margin">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Link windows</span>
+        <span class="metric-value accent" id="m-windows">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Link availability</span>
+        <span class="metric-value accent" id="m-avail">—</span>
+      </div>
+    </div>
+
+    <!-- spacer -->
+    <div style="flex:1;"></div>
+
+  </div><!-- /sidebar -->
+
+  <!-- ═══════════════════════════ MAP ══════════════════════════════ -->
+  <div id="map-wrap">
+    <div id="cesiumContainer"></div>
+
+    <!-- Spinner overlay -->
+    <div id="spinner">
+      <div class="spin-ring"></div>
+      <div id="spin-msg">Fetching TLEs & propagating orbits…</div>
+    </div>
+
+    <!-- Playback controls -->
+    <div id="playback" style="display:none;">
+      <button id="play-btn" class="active">⏸ Pause</button>
+      <button id="loop-btn">↺ Loop</button>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <input type="range" id="speed-slider" min="0" max="8" step="1" value="4" />
+        <span id="speed-label">60×</span>
+      </div>
+      <span id="current-time-display">—</span>
+    </div>
+  </div>
+
+</div><!-- /layout -->
+
+<!-- Link timeline chart (bottom of sidebar, appended dynamically) -->
+<div id="chart-wrap" style="display:none;">
+  <div id="chart-title">Link Margin over Time</div>
+  <canvas id="linkChart"></canvas>
+</div>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+//  Configuration
+// ═══════════════════════════════════════════════════════════════════════
+const API = '';   // same origin
+const SPEED_MULTIPLIERS = [1, 5, 10, 30, 60, 120, 300, 600, 1800];
+
+// Disable Cesium Ion (we use OSM tiles)
+Cesium.Ion.defaultAccessToken = '';
+
+// ═══════════════════════════════════════════════════════════════════════
+//  State
+// ═══════════════════════════════════════════════════════════════════════
+let viewer = null;
+let catalog = {};
+let sat1Norad = null, sat2Norad = null;
+let linkData = [];       // step-by-step link results from backend
+let simSummary = {};
+let linkChart = null;
+let simEpoch = null;     // Date object
+let simStepS = 30;
+let clockListener = null;
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Init CesiumJS
+// ═══════════════════════════════════════════════════════════════════════
+function initCesium() {
+  // Use OSM tiles — no Ion token required
+  const imageryProvider = new Cesium.UrlTemplateImageryProvider({
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    credit: new Cesium.Credit('© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors'),
+    maximumLevel: 19,
+  });
+
+  viewer = new Cesium.Viewer('cesiumContainer', {
+    imageryProvider,
+    baseLayerPicker: false,
+    geocoder: false,
+    homeButton: true,
+    sceneModePicker: false,
+    navigationHelpButton: false,
+    animation: false,
+    timeline: false,
+    fullscreenButton: false,
+    vrButton: false,
+    infoBox: false,
+    selectionIndicator: false,
+    shouldAnimate: false,
+    requestRenderMode: false,
+  });
+
+  // Dark space atmosphere
+  viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#050a0f');
+  viewer.scene.skyAtmosphere.show = true;
+  viewer.scene.globe.enableLighting = true;
+  viewer.scene.globe.nightFadeInDistance  = 1e7;
+  viewer.scene.globe.nightFadeOutDistance = 4e7;
+
+  // Star field
+  viewer.scene.skyBox = new Cesium.SkyBox({
+    sources: {
+      positiveX: 'https://cesium.com/downloads/cesiumjs/releases/1.123/Build/Cesium/Assets/Textures/SkyBox/tycho2t3_80_px.jpg',
+      negativeX: 'https://cesium.com/downloads/cesiumjs/releases/1.123/Build/Cesium/Assets/Textures/SkyBox/tycho2t3_80_mx.jpg',
+      positiveY: 'https://cesium.com/downloads/cesiumjs/releases/1.123/Build/Cesium/Assets/Textures/SkyBox/tycho2t3_80_py.jpg',
+      negativeY: 'https://cesium.com/downloads/cesiumjs/releases/1.123/Build/Cesium/Assets/Textures/SkyBox/tycho2t3_80_my.jpg',
+      positiveZ: 'https://cesium.com/downloads/cesiumjs/releases/1.123/Build/Cesium/Assets/Textures/SkyBox/tycho2t3_80_pz.jpg',
+      negativeZ: 'https://cesium.com/downloads/cesiumjs/releases/1.123/Build/Cesium/Assets/Textures/SkyBox/tycho2t3_80_mz.jpg',
+    }
+  });
+
+  // Zoom out to see full Earth
+  viewer.camera.setView({
+    destination: Cesium.Cartesian3.fromDegrees(0, 20, 2.5e7),
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Catalog / dropdowns
+// ═══════════════════════════════════════════════════════════════════════
+async function loadCatalog() {
+  try {
+    const res = await fetch(`${API}/api/catalog`);
+    catalog = await res.json();
+    populateGroupDropdowns();
+  } catch(e) {
+    showToast('Failed to load satellite catalog.');
+  }
+}
+
+function populateGroupDropdowns() {
+  ['sat1-group', 'sat2-group'].forEach(id => {
+    const sel = document.getElementById(id);
+    for (const group of Object.keys(catalog)) {
+      const opt = document.createElement('option');
+      opt.value = group;
+      opt.textContent = group;
+      sel.appendChild(opt);
+    }
+  });
+}
+
+function onGroupChange(groupSelId, satSelId) {
+  const group = document.getElementById(groupSelId).value;
+  const satSel = document.getElementById(satSelId);
+  satSel.innerHTML = '<option value="">— choose satellite —</option>';
+  if (!group || !catalog[group]) return;
+  for (const sat of catalog[group]) {
+    const opt = document.createElement('option');
+    opt.value = sat.norad;
+    opt.textContent = `${sat.name}  (${sat.norad})`;
+    satSel.appendChild(opt);
+  }
+}
+
+document.getElementById('sat1-group').addEventListener('change', () => onGroupChange('sat1-group', 'sat1-select'));
+document.getElementById('sat2-group').addEventListener('change', () => onGroupChange('sat2-group', 'sat2-select'));
+
+document.getElementById('sat1-select').addEventListener('change', e => {
+  sat1Norad = e.target.value || null;
+  document.getElementById('sat1-result').textContent = sat1Norad ? `NORAD: ${sat1Norad}` : '';
+});
+document.getElementById('sat2-select').addEventListener('change', e => {
+  sat2Norad = e.target.value || null;
+  document.getElementById('sat2-result').textContent = sat2Norad ? `NORAD: ${sat2Norad}` : '';
+});
+
+// ── Search ─────────────────────────────────────────────────────────────
+async function doSearch(inputId, resultId, whichSat) {
+  const q = document.getElementById(inputId).value.trim();
+  if (q.length < 2) return;
+  const resultEl = document.getElementById(resultId);
+  resultEl.textContent = 'Searching…';
+  try {
+    const res = await fetch(`${API}/api/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    if (!data.length) { resultEl.textContent = 'No results found.'; return; }
+    // Use first result
+    const sat = data[0];
+    if (whichSat === 1) { sat1Norad = sat.norad; }
+    else                { sat2Norad = sat.norad; }
+    resultEl.textContent = `✓ ${sat.name} (NORAD ${sat.norad})`;
+    resultEl.style.color = 'var(--green)';
+    // If more results, show a small note
+    if (data.length > 1) resultEl.textContent += ` (+${data.length-1} more, using first match)`;
+  } catch(e) {
+    resultEl.textContent = 'Search failed.';
+    resultEl.style.color = 'var(--red)';
+  }
+}
+
+document.getElementById('sat1-search-btn').addEventListener('click', () => doSearch('sat1-search', 'sat1-result', 1));
+document.getElementById('sat2-search-btn').addEventListener('click', () => doSearch('sat2-search', 'sat2-result', 2));
+document.getElementById('sat1-search').addEventListener('keydown', e => e.key === 'Enter' && doSearch('sat1-search', 'sat1-result', 1));
+document.getElementById('sat2-search').addEventListener('keydown', e => e.key === 'Enter' && doSearch('sat2-search', 'sat2-result', 2));
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Sliders
+// ═══════════════════════════════════════════════════════════════════════
+function initSliders() {
+  const bind = (sliderId, labelId, fmt) => {
+    const slider = document.getElementById(sliderId);
+    const label  = document.getElementById(labelId);
+    label.textContent = fmt(slider.value);
+    slider.addEventListener('input', () => {
+      label.textContent = fmt(slider.value);
+      updateMaxRangePreview();
+    });
+  };
+  bind('hours-slider',  'hours-val',  v => `${parseFloat(v).toFixed(1)} h`);
+  bind('freq-slider',   'freq-val',   v => `${v} GHz`);
+  bind('power-slider',  'power-val',  v => `${v} dBm`);
+  bind('gain-slider',   'gain-val',   v => `${v} dBi`);
+  bind('margin-slider', 'margin-val', v => `${v} dB`);
+  document.getElementById('bw-select').addEventListener('change', updateMaxRangePreview);
+  updateMaxRangePreview();
+}
+
+function getLinkConfig() {
+  return {
+    freq_ghz:       parseFloat(document.getElementById('freq-slider').value),
+    tx_power_dbm:   parseFloat(document.getElementById('power-slider').value),
+    tx_gain_dbi:    parseFloat(document.getElementById('gain-slider').value),
+    rx_gain_dbi:    parseFloat(document.getElementById('gain-slider').value),
+    bandwidth_mhz:  parseFloat(document.getElementById('bw-select').value),
+    min_margin_db:  parseFloat(document.getElementById('margin-slider').value),
+    snr_req_db:     10.0,
+    noise_figure_db: 5.0,
+  };
+}
+
+function updateMaxRangePreview() {
+  // Client-side estimation of max range using link budget formula
+  const cfg = getLinkConfig();
+  // Noise floor: kTB + NF  (kT = -174 dBm/Hz at 290K, B in Hz)
+  const nFloor = -174 + 10 * Math.log10(cfg.bandwidth_mhz * 1e6) + cfg.noise_figure_db;
+  const pRxMin = nFloor + 10 + cfg.min_margin_db; // SNR_req = 10 dB
+  const fsplMax = cfg.tx_power_dbm + cfg.tx_gain_dbi + cfg.rx_gain_dbi - pRxMin;
+  const C = 2.998e8;
+  const dM = Math.pow(10, fsplMax / 20) * C / (4 * Math.PI * cfg.freq_ghz * 1e9);
+  const dKm = dM / 1e3;
+  const el = document.getElementById('max-range-val');
+  if (dKm > 1e6) { el.textContent = '> 1 000 000 km (no range limit)'; }
+  else            { el.textContent = `${Math.round(dKm).toLocaleString()} km`; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Playback controls
+// ═══════════════════════════════════════════════════════════════════════
+let isPlaying = true;
+
+function initPlayback() {
+  const playBtn  = document.getElementById('play-btn');
+  const loopBtn  = document.getElementById('loop-btn');
+  const speedSl  = document.getElementById('speed-slider');
+  const speedLbl = document.getElementById('speed-label');
+
+  playBtn.addEventListener('click', () => {
+    isPlaying = !isPlaying;
+    viewer.clock.shouldAnimate = isPlaying;
+    playBtn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+    playBtn.classList.toggle('active', isPlaying);
+  });
+
+  loopBtn.addEventListener('click', () => {
+    const isLoop = viewer.clock.clockRange === Cesium.ClockRange.LOOP_STOP;
+    viewer.clock.clockRange = isLoop ? Cesium.ClockRange.CLAMPED : Cesium.ClockRange.LOOP_STOP;
+    loopBtn.style.color = isLoop ? 'var(--muted)' : 'var(--accent)';
+  });
+
+  speedSl.addEventListener('input', () => {
+    const mult = SPEED_MULTIPLIERS[parseInt(speedSl.value)];
+    viewer.clock.multiplier = mult;
+    speedLbl.textContent = `${mult}×`;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Run simulation
+// ═══════════════════════════════════════════════════════════════════════
+document.getElementById('run-btn').addEventListener('click', runSimulation);
+
+async function runSimulation() {
+  if (!sat1Norad || !sat2Norad) {
+    showToast('Please select both satellites first.');
+    return;
+  }
+  if (sat1Norad === sat2Norad) {
+    showToast('Please select two different satellites.');
+    return;
+  }
+
+  setSpinner(true, 'Fetching TLEs & propagating orbits…');
+  document.getElementById('run-btn').disabled = true;
+
+  const hours   = parseFloat(document.getElementById('hours-slider').value);
+  const step    = parseInt(document.getElementById('step-select').value);
+  const linkCfg = getLinkConfig();
+
+  try {
+    const res = await fetch(`${API}/api/simulate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sat1: sat1Norad, sat2: sat2Norad,
+                             hours, step, link_config: linkCfg }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || res.statusText);
+    }
+    const data = await res.json();
+
+    linkData   = data.link_data;
+    simSummary = data.summary;
+    simEpoch   = new Date(data.summary.epoch);
+    simStepS   = data.summary.step_seconds;
+
+    setSpinner(true, 'Loading 3D scene…');
+    await loadCzmlIntoViewer(data.czml);
+    buildLinkChart(data.link_data, data.summary);
+    updateSummaryPanel(data.summary);
+
+    document.getElementById('status-section').style.display = '';
+    document.getElementById('playback').style.display = 'flex';
+    document.getElementById('chart-wrap').style.display = '';
+
+    // Append chart to sidebar bottom
+    const sidebar = document.getElementById('sidebar');
+    const chartWrap = document.getElementById('chart-wrap');
+    sidebar.appendChild(chartWrap);
+
+    startClockListener();
+  } catch(e) {
+    showToast(`Simulation failed: ${e.message}`);
+    console.error(e);
+  } finally {
+    setSpinner(false);
+    document.getElementById('run-btn').disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Load CZML into CesiumJS
+// ═══════════════════════════════════════════════════════════════════════
+async function loadCzmlIntoViewer(czml) {
+  // Remove old data sources
+  viewer.dataSources.removeAll();
+
+  const dataSource = await Cesium.CzmlDataSource.load(czml);
+  await viewer.dataSources.add(dataSource);
+
+  // Set clock from CZML document
+  const clockPacket = czml.find(p => p.id === 'document');
+  if (clockPacket && clockPacket.clock) {
+    const c = clockPacket.clock;
+    viewer.clock.startTime      = Cesium.JulianDate.fromIso8601(c.interval.split('/')[0]);
+    viewer.clock.stopTime       = Cesium.JulianDate.fromIso8601(c.interval.split('/')[1]);
+    viewer.clock.currentTime    = Cesium.JulianDate.fromIso8601(c.currentTime);
+    viewer.clock.multiplier     = 60;
+    viewer.clock.clockRange     = Cesium.ClockRange.LOOP_STOP;
+    viewer.clock.shouldAnimate  = true;
+    isPlaying = true;
+    document.getElementById('play-btn').textContent = '⏸ Pause';
+    document.getElementById('play-btn').classList.add('active');
+  }
+
+  // Zoom to show both satellites
+  viewer.flyTo(dataSource, { duration: 2.0 });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Clock listener → live status updates
+// ═══════════════════════════════════════════════════════════════════════
+function startClockListener() {
+  if (clockListener) clockListener();
+  clockListener = viewer.clock.onTick.addEventListener(clock => {
+    const jd = clock.currentTime;
+    const isoStr = Cesium.JulianDate.toIso8601(jd);
+    const currentDate = new Date(isoStr);
+    document.getElementById('current-time-display').textContent =
+      currentDate.toUTCString().replace('GMT', 'UTC');
+
+    if (!simEpoch || !linkData.length) return;
+    const elapsedS = (currentDate - simEpoch) / 1000;
+    const idx = Math.min(
+      Math.max(0, Math.round(elapsedS / simStepS)),
+      linkData.length - 1
+    );
+    const d = linkData[idx];
+    if (d) updateLiveStatus(d);
+  });
+}
+
+function updateLiveStatus(d) {
+  const badge    = document.getElementById('link-badge');
+  const badgeTxt = document.getElementById('badge-text');
+  const reasonEl = document.getElementById('reason-text');
+
+  if (d.is_linked) {
+    badge.className = 'linked';
+    badgeTxt.textContent = 'LINK ACTIVE';
+  } else if (!d.los_clear) {
+    badge.className = 'blocked';
+    badgeTxt.textContent = 'EARTH OCCULTATION';
+  } else {
+    badge.className = 'blocked';
+    badgeTxt.textContent = 'OUT OF RANGE';
+  }
+  reasonEl.textContent = d.reason;
+
+  const margin = d.link_margin_db;
+  const marginClass = margin > 10 ? 'good' : margin > 0 ? 'warn' : 'bad';
+
+  setMetric('m-range', `${d.range_km.toLocaleString()} km`, 'accent');
+  setMetric('m-fspl',  `${d.fspl_db} dB`, '');
+  setMetric('m-prx',   `${d.received_power_dbm} dBm`, '');
+  setMetric('m-noise', `${d.noise_floor_dbm} dBm`, '');
+  setMetric('m-margin',`${margin > 0 ? '+' : ''}${d.link_margin_db} dB`, marginClass);
+}
+
+function setMetric(id, val, cls) {
+  const el = document.getElementById(id);
+  el.textContent = val;
+  el.className = 'metric-value' + (cls ? ' ' + cls : '');
+}
+
+function updateSummaryPanel(summary) {
+  setMetric('m-windows', `${summary.n_link_windows}`, 'accent');
+  setMetric('m-avail',   `${summary.link_fraction_pct}%`,
+            summary.link_fraction_pct > 50 ? 'good' : summary.link_fraction_pct > 20 ? 'warn' : 'bad');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Chart.js — link margin timeline
+// ═══════════════════════════════════════════════════════════════════════
+function buildLinkChart(data, summary) {
+  if (linkChart) { linkChart.destroy(); linkChart = null; }
+
+  document.getElementById('chart-wrap').style.display = '';
+  const canvas = document.getElementById('linkChart');
+
+  // Downsample for performance if needed
+  const MAX_POINTS = 300;
+  let pts = data;
+  if (data.length > MAX_POINTS) {
+    const step = Math.ceil(data.length / MAX_POINTS);
+    pts = data.filter((_, i) => i % step === 0);
+  }
+
+  const labels   = pts.map(d => {
+    const mins = Math.round(d.t / 60);
+    return `${mins}m`;
+  });
+  const margins  = pts.map(d => d.link_margin_db);
+  const bgColors = pts.map(d => d.is_linked
+    ? 'rgba(63,185,80,0.3)' : 'rgba(248,81,73,0.3)');
+  const lineColors = pts.map(d => d.is_linked
+    ? 'rgba(63,185,80,1)' : 'rgba(248,81,73,1)');
+
+  linkChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Link Margin (dB)',
+        data: margins,
+        backgroundColor: bgColors,
+        borderColor: lineColors,
+        borderWidth: 1,
+        borderRadius: 1,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const d = pts[ctx.dataIndex];
+              return [
+                `Margin: ${ctx.parsed.y.toFixed(1)} dB`,
+                `Range: ${d.range_km} km`,
+                d.is_linked ? '✓ LINKED' : '✗ ' + (d.los_clear ? 'OUT OF RANGE' : 'OCCLUDED'),
+              ];
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8b949e', font: { size: 9 }, maxTicksLimit: 10 },
+          grid: { color: '#21262d' },
+        },
+        y: {
+          ticks: { color: '#8b949e', font: { size: 9 } },
+          grid: { color: '#21262d' },
+          title: { display: true, text: 'dB', color: '#8b949e', font: { size: 10 } },
+        },
+      },
+    },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Utilities
+// ═══════════════════════════════════════════════════════════════════════
+function setSpinner(show, msg = '') {
+  const el = document.getElementById('spinner');
+  el.classList.toggle('active', show);
+  if (msg) document.getElementById('spin-msg').textContent = msg;
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 4500);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Bootstrap
+// ═══════════════════════════════════════════════════════════════════════
+initCesium();
+loadCatalog();
+initSliders();
+initPlayback();
+</script>
+</body>
+</html>
