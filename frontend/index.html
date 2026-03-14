@@ -492,15 +492,16 @@ let clockListener = null;
 //  Init CesiumJS
 // ═══════════════════════════════════════════════════════════════════════
 function initCesium() {
-  // Use OSM tiles — no Ion token required
-  const imageryProvider = new Cesium.UrlTemplateImageryProvider({
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    credit: new Cesium.Credit('© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors'),
-    maximumLevel: 19,
-  });
-
+  // CesiumJS 1.107+ removed the `imageryProvider` constructor option.
+  // Use `baseLayer` with ImageryLayer wrapper instead.
   viewer = new Cesium.Viewer('cesiumContainer', {
-    imageryProvider,
+    baseLayer: new Cesium.ImageryLayer(
+      new Cesium.UrlTemplateImageryProvider({
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        credit: new Cesium.Credit('© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a> contributors', true),
+        maximumLevel: 19,
+      })
+    ),
     baseLayerPicker: false,
     geocoder: false,
     homeButton: true,

@@ -32,8 +32,8 @@ Typical Ka-band ISL parameters used here as defaults:
   • Required SNR   : 10 dB  (≈ QPSK @ BER 10⁻⁶)
   • Min link margin: 3 dB   (design margin)
 
-With these values the maximum ISL range is ≈ 3 800 km.
-Increasing the antenna gain by 5 dBi per side extends it to ≈ 12 000 km.
+With these values the maximum ISL range is ≈ 820 km.
+Increasing the antenna gain to 40 dBi per side extends it to ≈ 2 600 km.
 """
 
 import math

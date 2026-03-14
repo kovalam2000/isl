@@ -20,8 +20,9 @@ from .link_budget import LinkConfig, compute_link_budget, max_range_km
 
 logger = logging.getLogger(__name__)
 
-# Skyfield timescale (loaded once at module import)
-_TS = load.timescale()
+# Skyfield timescale (loaded once at module import).
+# builtin=True avoids a network fetch to IERS on every server restart.
+_TS = load.timescale(builtin=True)
 
 # Colours [R, G, B, A]
 SAT1_COLOUR = [255, 200, 0, 255]     # Gold
